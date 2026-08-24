@@ -569,10 +569,10 @@ if seccion == "🏠 Inicio & Catálogo":
                "⚠️ Tus números están reservados. Serán confirmados tras la verificación de tu transferencia."
                     )
 
-                st.subheader("🎟️ Tus Números Asignados:")
-                cols_num = st.columns(min(len(num_asignados), 5))
-                for i, n in enumerate(num_asignados):
-                cols_num[i % 5].metric("Boleto", n)
+            st.subheader("🎟️ Tus Números Asignados:")
+            cols_num = st.columns(min(len(num_asignados), 5))
+            for i, n in enumerate(num_asignados):
+            cols_num[i % 5].metric("Boleto", n)
 
 # ---------------------------------------------------------
 # SECCIÓN: VERIFICADOR DE BOLETOS
