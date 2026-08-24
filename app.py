@@ -256,7 +256,8 @@ if seccion == "🏠 Inicio & Catálogo":
     # Formulario de compra si selecciona una rifa
     if "rifa_seleccionada" in st.session_state:
         st.markdown("---")
-      nombre = st.session_state['nombre_rifa']
+        
+        nombre = st.session_state['nombre_rifa']
         precio = st.session_state['precio_rifa']
         
         st.markdown(
