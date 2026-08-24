@@ -435,35 +435,49 @@ if seccion == "🏠 Inicio & Catálogo":
                     f"Cantidad mínima: {minimo_rifa} boletos. "
                     "Toca un nivel para seleccionarlo automáticamente."
                 )
+       niveles = [
+          ("🟢 NORMAL", minimo_rifa),
+          ("🔵 DOBLE", minimo_rifa * 2),
+          ("🟣 INTERMEDIO", minimo_rifa * 3),
+          ("🟠 PROFESIONAL", minimo_rifa * 5),
+          ("🔴 PRO", minimo_rifa * 10),
+      ]
+  st.markdown("### 🎟️ Elige tu cantidad de boletos")
 
-                niveles = [
-                    ("🟢 NORMAL", minimo_rifa),
-                    ("🔵 DOBLE", minimo_rifa * 2),
-                    ("🟣 INTERMEDIO", minimo_rifa * 3),
-                    ("🟠 PROFESIONAL", minimo_rifa * 5),
-                    ("🔴 PRO", minimo_rifa * 10),
-                ]
+  nivel_cols = st.columns(5)
 
-                # Streamlit no permite botones dentro de un st.form,
-                # por eso los niveles se colocan antes del formulario.
-                # La selección queda guardada en session_state.
-                nivel_cols = st.columns(len(niveles))
-                for i, (nombre_nivel, cantidad_nivel) in enumerate(niveles):
-                    cantidad_nivel = min(100, cantidad_nivel)
-                    if nivel_cols[i].button(
-                        f"{nombre_nivel} · {cantidad_nivel}",
-                        key=f"nivel_{st.session_state['rifa_seleccionada']}_{i}",
-                        use_container_width=True,
-                    ):
-                        st.session_state["cant_boletos"] = cantidad_nivel
-                        st.session_state["nivel_boletos"] = nombre_nivel
-                        st.rerun()
+  for i, (nombre_nivel, cantidad_nivel) in enumerate(niveles):
+        if cantidad_nivel > 100:
+        cantidad_nivel = 100
 
-                cantidad_guardada = int(
-                    st.session_state.get("cant_boletos", minimo_rifa)
-                )
+      with nivel_cols[i]:
+        if st.button(
+            f"{nombre_nivel}\n{cantidad_nivel} boletos",
+            key=f"nivel_{st.session_state['rifa_seleccionada']}_{i}",
+            use_container_width=True,
+        ):
+            st.session_state["cant_boletos"] = cantidad_nivel
+            st.session_state["nivel_boletos"] = nombre_nivel
+            st.session_state["combo_seleccionado"] = cantidad_nivel
+            st.rerun()
 
-                cant_boletos = st.number_input(
+            cantidad_guardada = int(
+    st.session_state.get(
+        "cant_boletos",
+        minimo_rifa
+     )
+   )
+            nivel_actual = st.session_state.get(
+    "nivel_boletos",
+    "🟢 NORMAL"
+ )
+
+st.info(
+    f"🎟️ Cantidad seleccionada: **{cantidad_guardada} boletos** "
+    f"({nivel_actual})"
+)
+
+            cant_boletos = st.number_input(
                     "✏️ O escribe la cantidad manualmente",
                     min_value=minimo_rifa,
                     max_value=100,
