@@ -2164,4 +2164,4 @@ También cambié la lógica para que la cantidad seleccionada quede directamente
 
 Y el máximo continúa siendo **100 boletos**.
 
-**Una cosa muy importante:** si ya tienes un `rifas_v4.db` creado de una versión anterior, este código conserva esa base de datos. Si estás probando desde cero y quieres que se creen nuevamente todos los boletos de las rifas, puedes hacer una copia de seguridad y eliminar `rifas_v4.db` antes de ejecutar esta versión.
+**Una cosa muy importante:** si ya tienes un `rifas_v4.db` creado
