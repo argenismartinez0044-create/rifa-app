@@ -530,10 +530,10 @@ if seccion == "🏠 Inicio & Catálogo":
                 )
                 disp = c.fetchall()
 
-            if len(disp) < cant_boletos:
-                    st.error("No hay suficientes boletos disponibles.")
-                else:
-                    asignados = random.sample(disp, cant_boletos)
+             if len(disp) < cant_boletos:
+                st.error("No hay suficientes boletos disponibles.")
+            else:
+                 asignados = random.sample(disp, cant_boletos)
 
                     os.makedirs("comprobantes", exist_ok=True)
                     path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.jpg"
