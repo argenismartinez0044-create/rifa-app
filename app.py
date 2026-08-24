@@ -6,55 +6,42 @@ from PIL import Image
 import streamlit as st
 
 DB_FILE = "rifas_v4.db"
-WHATSAPP_NUMERO = "8294835217"  # ⚠️ Coloca tu número de WhatsApp real
+WHATSAPP_NUMERO = "8294835217"
+
+st.set_page_config(page_title="Rifas Luxury", page_icon="🎲", layout="wide")
 
 
 # ---------------------------------------------------------
-# DIÁLOGO EMERGENTE GLOBAL: CHAT SOPORTE IA
+# DIÁLOGO DE CHAT IA
 # ---------------------------------------------------------
-@st.dialog("🤖 Asistente Virtual - Rifas Sirio ")
+@st.dialog("🤖 Asistente Virtual - Rifas Luxury")
 def abrir_soporte_ia():
-    st.caption(
-        "Respuestas instantáneas las 24 horas. Si tu duda requiere atención manual, te transferiremos a un asesor."
-    )
+    st.caption("Respuestas instantáneas las 24 horas.")
 
     if "mensajes_chat" not in st.session_state:
         st.session_state["mensajes_chat"] = [
             {
                 "role": "assistant",
-                "content": (
-                    "¡Hola! Soy tu asistente de **Rifas Sirio RD**. 🎲\n\n"
-                    "Puedo ayudarte con:\n"
-                    "• **¿Cómo participar en los sorteos?**\n"
-                    "• **Cuentas de banco y pagos**\n"
-                    "• **Consultar tus boletos comprados**\n"
-                    "• **Fechas de los sorteos**\n\n"
-                    "¿Qué deseas consultar?"
-                ),
+                "content": "¡Hola! Soy tu asistente de **Rifas Luxury** 🎲.\n\n¿En qué te puedo ayudar hoy? (Comprar boletos, datos de banco, verificar tus números...)",
             }
         ]
 
-    # Botones de consulta rápida
-    st.markdown("**Preguntas frecuentes:**")
     c1, c2, c3, c4 = st.columns(4)
-
     opcion_rapida = None
-    if c1.button("🎲 ¿Cómo participar?", key="dlg_c1"):
+    if c1.button("🎲 ¿Cómo jugar?", key="dlg_c1"):
         opcion_rapida = "¿Cómo participar?"
-    if c2.button("💳 Cuentas bancarias", key="dlg_c2"):
+    if c2.button("💳 Bancos", key="dlg_c2"):
         opcion_rapida = "cuentas de banco"
     if c3.button("🔎 Mis boletos", key="dlg_c3"):
         opcion_rapida = "verificar mis boletos"
-    if c4.button("📅 Fechas de sorteo", key="dlg_c4"):
+    if c4.button("📅 Sorteos", key="dlg_c4"):
         opcion_rapida = "fecha del sorteo"
 
-    # Renderizar historial de mensajes
     for msg in st.session_state["mensajes_chat"]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # Capturar entrada por chat o por botón rápido
-    user_input = st.chat_input("Escribe tu pregunta aquí...")
+    user_input = st.chat_input("Escribe tu duda...")
     prompt = user_input or opcion_rapida
 
     if prompt:
@@ -64,9 +51,8 @@ def abrir_soporte_ia():
             )
 
         txt = prompt.lower()
-        mostrar_whatsapp = False
+        mostrar_wa = False
 
-        # Lógica de detección de intenciones
         if any(
             w in txt
             for w in [
@@ -78,13 +64,12 @@ def abrir_soporte_ia():
                 "instrucciones",
             ]
         ):
-            respuesta = (
-                "**Para participar en 5 pasos simples:**\n\n"
-                "1. Ve a **🏠 Inicio & Catálogo** y elige tu premio favorito.\n"
-                "2. Selecciona la cantidad de boletos que deseas (mínimo 10 boletos).\n"
-                "3. Realiza la transferencia a nuestras cuentas de **Banreservas** o **Banco Popular**.\n"
-                "4. Adjunta la foto de tu comprobante en el formulario.\n"
-                "5. ¡Listo! Tus números se reservarán al instante."
+            resp = (
+                "**Pasos para participar:**\n"
+                "1. Selecciona un premio en **🏠 Inicio & Catálogo**.\n"
+                "2. Elige tus boletos y realiza la transferencia.\n"
+                "3. Adjunta la foto del comprobante.\n"
+                "4. ¡Tus números quedan reservados!"
             )
         elif any(
             w in txt
@@ -94,111 +79,41 @@ def abrir_soporte_ia():
                 "transferencia",
                 "banreservas",
                 "popular",
-                "cuentas",
                 "cuenta",
-                "pagar",
             ]
         ):
-            respuesta = (
-                "**Cuentas oficiales para realizar tu pago:**\n\n"
-                "🔴 **Banreservas (Ahorros):** `9606561652` - Titular: ARGENIS MARTINEZ C.\n"
-                "🔵 **Banco Popular (Ahorros):** `821794971` - Titular: ARGENIS MARTINEZ\n\n"
-                "Recuerda tomarle foto al comprobante para adjuntarlo al hacer tu orden."
+            resp = (
+                "**Cuentas bancarias oficiales:**\n\n"
+                "🔴 **Banreservas (Ahorros):** `9606561652` (Argenis Martinez C.)\n"
+                "🔵 **Banco Popular (Ahorros):** `821794971` (Argenis Martinez)"
             )
         elif any(
-            w in txt
-            for w in [
-                "verificar",
-                "consultar",
-                "mi boleto",
-                "mis boletos",
-                "donde estan",
-                "numeros",
-                "dónde están",
-            ]
+            w in txt for w in ["verificar", "consultar", "mi boleto", "numeros"]
         ):
-            respuesta = (
-                "Puedes verificar el estado de tus números en cualquier momento en el menú lateral pestaña **🔎 Verificador de boletos**.\n\n"
-                "Solo ingresa el número de teléfono/WhatsApp con el que hiciste la compra."
+            resp = "Ingresa a la sección **🔎 Verificador de boletos** e introduce tu número telefónico."
+        elif any(w in txt for w in ["ganador", "sorteo", "fecha", "cuando"]):
+            resp = "Los premios se rifan al alcanzar la meta de boletos indicadas en la ficha de la rifa."
+        elif any(w in txt for w in ["precio", "costo", "minimo", "mínimo"]):
+            resp = (
+                "• **PlayStation 5 Pro:** RD$ 5.00 / boleto (Mínimo 15 boletos).\n"
+                "• **5 iPhone 17 Pro Max:** RD$ 15.00 / boleto (Mínimo 10 boletos)."
             )
-        elif any(
-            w in txt
-            for w in [
-                "ganador",
-                "sorteo",
-                "fecha",
-                "cuando se rifa",
-                "cuándo",
-                "dia",
-                "día",
-            ]
-        ):
-            respuesta = (
-                "**Fechas de sorteo:**\n\n"
-                "Los premios se rifan automáticamente al alcanzar la meta de boletos vendidos indicada en la ficha del producto (ejemplo: al vender el 80% o 100%). Las fechas exactas también se anuncian en nuestras redes oficiales."
-            )
-        elif any(
-            w in txt
-            for w in [
-                "precio",
-                "costo",
-                "cuanto cuesta",
-                "cuánto cuesta",
-                "valor",
-                "minimo",
-                "mínimo",
-            ]
-        ):
-            respuesta = (
-                "**Precios por boleto:**\n\n"
-                "• **PlayStation 5 Pro:** RD$ 5.00 por boleto.\n"
-                "• **Sorteo 5 iPhone 17 Pro Max:** RD$ 15.00 por boleto.\n\n"
-                "📌 La compra mínima es de **10 boletos** por orden."
-            )
-        elif any(
-            w in txt
-            for w in ["seguro", "confiable", "real", "legal", "garantía"]
-        ):
-            respuesta = (
-                "¡100% Garantizado! 🏆 Puedes revisar las entregas anteriores en la pestaña **🏆 Ganadores**. "
-                "Además, nuestro sistema te asigna los números de boleto al instante en el verificador."
-            )
-        elif any(
-            w in txt
-            for w in [
-                "persona",
-                "humano",
-                "administrador",
-                "contacto",
-                "telefono",
-                "hablar con alguien",
-                "whatsapp",
-                "soporte",
-                "asesor",
-            ]
-        ):
-            respuesta = "Te conecto ahora mismo con un asesor de soporte humano vía WhatsApp para atender tu caso personalizado:"
-            mostrar_whatsapp = True
         else:
-            respuesta = (
-                "No entendí bien tu consulta. ¿Deseas saber cómo participar, consultar datos bancarios, verificar boletos o hablar con un representante?"
-            )
-            mostrar_whatsapp = True
+            resp = "¿Necesitas ayuda personalizada? Puedes hablar con un asesor por WhatsApp."
+            mostrar_wa = True
 
         st.session_state["mensajes_chat"].append(
-            {"role": "assistant", "content": respuesta}
+            {"role": "assistant", "content": resp}
         )
-
-        if mostrar_whatsapp:
+        if mostrar_wa:
             st.markdown(
-                f"[💬 Hablar con un asesor en WhatsApp](https://wa.me/{WHATSAPP_NUMERO})"
+                f"[💬 Hablar con soporte en WhatsApp](https://wa.me/{WHATSAPP_NUMERO})"
             )
-
         st.rerun()
 
 
 # ---------------------------------------------------------
-# INICIALIZACIÓN DE LA BASE DE DATOS
+# INICIALIZACIÓN DE BASE DE DATOS
 # ---------------------------------------------------------
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -208,13 +123,8 @@ def init_db():
         """
         CREATE TABLE IF NOT EXISTS rifas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT,
-            categoria TEXT,
-            precio_boleto REAL,
-            min_boletos INTEGER,
-            total_boletos INTEGER,
-            imagen TEXT,
-            fecha TEXT
+            nombre TEXT, categoria TEXT, precio_boleto REAL,
+            min_boletos INTEGER, total_boletos INTEGER, imagen TEXT, fecha TEXT
         )
         """
     )
@@ -222,15 +132,9 @@ def init_db():
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS boletos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rifa_id INTEGER,
-            numero TEXT,
-            estado TEXT DEFAULT 'disponible',
-            usuario_nombre TEXT,
-            usuario_telefono TEXT,
-            metodo_pago TEXT,
-            comprobante TEXT,
-            fecha_reserva DATETIME
+            id INTEGER PRIMARY KEY AUTOINCREMENT, rifa_id INTEGER, numero TEXT,
+            estado TEXT DEFAULT 'disponible', usuario_nombre TEXT, usuario_telefono TEXT,
+            metodo_pago TEXT, comprobante TEXT, fecha_reserva DATETIME
         )
         """
     )
@@ -238,10 +142,7 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
         c.execute(
-            """
-            INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
+            "INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 "PlayStation 5 Pro",
                 "Juego",
@@ -249,14 +150,11 @@ def init_db():
                 15,
                 100000,
                 "play.jpg",
-                "El sorteo se realiza una vez se complete el 100%",
+                "Fecha pendiente",
             ),
         )
         c.execute(
-            """
-            INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
+            "INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 "5 iPhone 17 Pro Max",
                 "TELÉFONO",
@@ -264,20 +162,19 @@ def init_db():
                 10,
                 100000,
                 "iphone.jpg",
-                "Cada 20% se sacara un ganador",
+                "Al vender el 80%",
             ),
         )
 
         for rifa_id in [1, 2]:
-            numeros = [f"{i:05d}" for i in range(1, 100001)]
+            numeros = [(rifa_id, f"{i:05d}") for i in range(1, 100001)]
             c.executemany(
-                "INSERT INTO boletos (rifa_id, numero) VALUES (?, ?)",
-                [(rifa_id, n) for n in numeros],
+                "INSERT INTO boletos (rifa_id, numero) VALUES (?, ?)", numeros
             )
-
         conn.commit()
 
-    # Forzado de actualización de la base de datos
+    # Actualizaciones explícitas para asegurar los valores correctos
+    c.execute("UPDATE rifas SET min_boletos = 15 WHERE id = 1")
     c.execute("UPDATE rifas SET min_boletos = 10 WHERE id = 2")
     c.execute(
         "UPDATE rifas SET nombre = '5 iPhone 17 Pro Max' WHERE id = 2"
@@ -293,7 +190,8 @@ def liberar_expirados():
     c.execute(
         """
         UPDATE boletos 
-        SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
+        SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
+            metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
         WHERE estado = 'reservado' AND fecha_reserva < ?
         """,
         (hace_15_min,),
@@ -306,15 +204,12 @@ init_db()
 liberar_expirados()
 
 # ---------------------------------------------------------
-# NAV Y HEADER PRINCIPAL
+# ESTILOS Y BOTÓN FLOTANTE ROBOT 🤖
 # ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    .stApp {
-        background: linear-gradient(135deg, #0b0d17 0%, #171b2e 50%, #080910 100%) !important;
-        color: #FFFFFF;
-    }
+    .stApp { background: linear-gradient(135deg, #0b0d17 0%, #171b2e 50%, #080910 100%) !important; color: #FFFFFF; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -332,80 +227,61 @@ seccion = st.sidebar.radio(
     ],
 )
 
-# Acceso rápido al Chat IA desde el menú lateral
 st.sidebar.markdown("---")
-if st.sidebar.button("💬 Abrir Asistente IA"):
+# Botón visible tipo robot flotante
+if st.sidebar.button("🤖 Abrir Chat de Soporte IA"):
     abrir_soporte_ia()
 
 # ---------------------------------------------------------
-# SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
+# SECCIÓN: INICIO Y CATÁLOGO
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
     col_logo, col_titulo = st.columns([1, 2])
-
     with col_logo:
         if os.path.exists("logo.png"):
-            st.image("logo.png", width=250)
-
+            st.image("logo.png", width=220)
     with col_titulo:
         st.markdown(
-            "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Experiencia exclusiva — La plataforma más lujosa para participar y ganar.</p>",
+            "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Plataforma Exclusiva de Rifas</p>",
             unsafe_allow_html=True,
         )
         st.markdown(
-            "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios extraordinarios garantizados</h1>",
+            "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios Exclusivos Garantizados</h1>",
             unsafe_allow_html=True,
         )
 
     st.markdown("---")
 
-    with st.expander(
-        "📺 **¿CÓMO PARTICIPAR?** — 5 pasos simples para participar y ganar"
-    ):
-        st.write("1. Selecciona la rifa en la que deseas participar del catálogo.")
+    with st.expander("📺 **¿CÓMO PARTICIPAR?** — 5 pasos simples"):
         st.write(
-            "2. Elige la cantidad de boletos que deseas comprar y completa tus datos."
-        )
-        st.write(
-            "3. Realiza la transferencia bancaria al banco de tu preferencia (Banreservas o Banco Popular)."
-        )
-        st.write("4. Sube la foto del comprobante de pago.")
-        st.write(
-            "5. Tu boleto quedará reservado e inmediatamente podrás consultarlo en el **Verificador de Boletos**."
+            "1. Selecciona un premio del catálogo.\n"
+            "2. Elige la cantidad de boletos que deseas comprar.\n"
+            "3. Haz la transferencia a Banreservas o Banco Popular.\n"
+            "4. Sube la captura de tu comprobante de pago.\n"
+            "5. Consulta tus números en el **Verificador de Boletos**."
         )
 
     st.markdown("---")
     st.subheader("🛍️ CATÁLOGO DE RIFAS")
 
     cat_filtro = st.radio(
-        "Filtrar por categoría:",
+        "Categoría:",
         ["TODOS", "Juego", "TELÉFONO", "DINERO", "VEHÍCULOS"],
         horizontal=True,
     )
 
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-
     if cat_filtro == "TODOS":
         c.execute("SELECT * FROM rifas")
     else:
         c.execute("SELECT * FROM rifas WHERE categoria = ?", (cat_filtro,))
-
     rifas = c.fetchall()
     conn.close()
 
     cols = st.columns(2)
     for idx, r in enumerate(rifas):
-        (
-            r_id,
-            r_nombre,
-            r_cat,
-            r_precio,
-            r_min,
-            r_total,
-            r_img,
-            r_fecha,
-        ) = r
+        r_id, r_nombre, r_cat, r_precio, r_min, r_total, r_img, r_fecha = r
 
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
@@ -421,7 +297,6 @@ if seccion == "🏠 Inicio & Catálogo":
         with cols[idx % 2]:
             st.markdown(f"### 🏷️ {r_nombre}")
             st.caption(f"Categoría: **{r_cat}**")
-
             if os.path.exists(r_img):
                 st.image(r_img, use_container_width=True)
 
@@ -432,11 +307,11 @@ if seccion == "🏠 Inicio & Catálogo":
             st.markdown(f"### **RD$ {r_precio:.2f}**")
             st.caption(f"Mínimo {r_min} boletos")
 
-            # Botones de acción dinámicos según el premio
-            if "PlayStation" in r_nombre:
-                label_btn = f"🎮 JUGAR POR {r_nombre.upper()}"
-            else:
-                label_btn = f"📱 PARTICIPAR POR {r_nombre.upper()}"
+            label_btn = (
+                f"🎮 JUGAR POR {r_nombre.upper()}"
+                if "PlayStation" in r_nombre
+                else f"📱 PARTICIPAR POR {r_nombre.upper()}"
+            )
 
             if st.button(label_btn, key=f"btn_jugar_{r_id}"):
                 st.session_state["rifa_seleccionada"] = r_id
@@ -446,72 +321,28 @@ if seccion == "🏠 Inicio & Catálogo":
 
     if "rifa_seleccionada" in st.session_state:
         st.markdown("---")
-
         nombre = st.session_state["nombre_rifa"]
         precio = st.session_state["precio_rifa"]
 
         st.markdown(
             f"""
-            <div style="
-                background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-                border-radius: 16px;
-                padding: 25px 30px;
-                text-align: center;
-                box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.4);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                margin-bottom: 25px;
-            ">
-                <span style="
-                    background-color: #F5C518;
-                    color: #000;
-                    font-size: 0.85rem;
-                    font-weight: 800;
-                    padding: 4px 12px;
-                    border-radius: 20px;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                ">Estás participando por</span>
-                <h1 style="
-                    color: #FFFFFF;
-                    font-size: 2.5rem;
-                    font-weight: 900;
-                    margin: 10px 0 5px 0;
-                    text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-                ">🎉 {nombre} 🎉</h1>
-                <p style="
-                    color: #E0E0E0;
-                    font-size: 1.2rem;
-                    margin: 0;
-                ">Precio por boleto: <strong style="color: #F5C518;">RD$ {precio:.2f}</strong></p>
+            <div style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); border-radius: 16px; padding: 20px; text-align: center;">
+                <span style="background-color: #F5C518; color: #000; font-weight: 800; padding: 4px 12px; border-radius: 20px;">Participando por</span>
+                <h2 style="color: #FFFFFF; margin: 10px 0;">🎉 {nombre} 🎉</h2>
+                <p style="color: #E0E0E0; margin: 0;">Precio por boleto: <strong style="color: #F5C518;">RD$ {precio:.2f}</strong></p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.subheader("💳 Métodos de Pago")
-        st.caption("Selecciona tu banco para ver la cuenta de transferencia:")
-
+        st.subheader("💳 Cuentas Bancarias para Transferir")
         tab_banres, tab_pop = st.tabs(["Banreservas", "Banco Popular"])
-
         with tab_banres:
-            st.markdown("### 🔴 Banreservas")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.write("**Tipo de Cuenta:** Ahorros")
-                st.write("**Titular:** ARGENIS MARTINEZ C.")
-            with c2:
-                st.write("**Número de Cuenta:** (Toca para copiar)")
-                st.code("9606561652", language="text")
-
+            st.write("**Banreservas (Ahorros):** ARGENIS MARTINEZ C.")
+            st.code("9606561652", language="text")
         with tab_pop:
-            st.markdown("### 🔵 Banco Popular")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.write("**Tipo de Cuenta:** Ahorros")
-                st.write("**Titular:** ARGENIS MARTINEZ")
-            with c2:
-                st.write("**Número de Cuenta:** (Toca para copiar)")
-                st.code("821794971", language="text")
+            st.write("**Banco Popular (Ahorros):** ARGENIS MARTINEZ")
+            st.code("821794971", language="text")
 
         st.markdown("---")
         st.subheader("📝 Registrar Boletos")
@@ -519,7 +350,7 @@ if seccion == "🏠 Inicio & Catálogo":
         with st.form("form_compra"):
             nombre_cliente = st.text_input("Nombre Completo")
             telefono_cliente = st.text_input(
-                "Número de Teléfono / WhatsApp (Ej: 8091234567)"
+                "Teléfono / WhatsApp (Ej: 8091234567)"
             )
             cant_boletos = st.number_input(
                 "Cantidad de boletos",
@@ -531,8 +362,7 @@ if seccion == "🏠 Inicio & Catálogo":
                 "Banco donde transferiste", ["Banreservas", "Banco Popular"]
             )
             comprobante_file = st.file_uploader(
-                "Subir foto del comprobante de pago",
-                type=["png", "jpg", "jpeg"],
+                "Subir foto del comprobante", type=["png", "jpg", "jpeg"]
             )
 
             total_pagar = cant_boletos * st.session_state["precio_rifa"]
@@ -542,11 +372,10 @@ if seccion == "🏠 Inicio & Catálogo":
 
         if btn_confirmar:
             if not nombre_cliente or not telefono_cliente or not comprobante_file:
-                st.error("Por favor completa todos los campos requeridos.")
+                st.error("Por favor completa todos los campos.")
             else:
                 conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
-
                 c.execute(
                     "SELECT id, numero FROM boletos WHERE rifa_id = ? AND estado = 'disponible'",
                     (st.session_state["rifa_seleccionada"],),
@@ -558,11 +387,9 @@ if seccion == "🏠 Inicio & Catálogo":
                     conn.close()
                 else:
                     asignados = random.sample(disp, cant_boletos)
-
                     os.makedirs("comprobantes", exist_ok=True)
                     path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.png"
-                    img = Image.open(comprobante_file)
-                    img.save(path_comp)
+                    Image.open(comprobante_file).save(path_comp)
 
                     ahora = datetime.datetime.now()
                     num_asignados = []
@@ -585,14 +412,11 @@ if seccion == "🏠 Inicio & Catálogo":
                                 b_id,
                             ),
                         )
-
                     conn.commit()
                     conn.close()
 
-                    st.success("🎉 ¡Boletos asignados exitosamente!")
-                    st.warning(
-                        "⚠️ Tus números están reservados. Serán confirmados tras la verificación de tu transferencia."
-                    )
+                    st.success("🎉 ¡Boletos asignados!")
+                    st.warning("⚠️ Números reservados a espera de verificación.")
 
                     st.subheader("🎟️ Tus Números Asignados:")
                     cols_num = st.columns(min(len(num_asignados), 5))
@@ -600,143 +424,94 @@ if seccion == "🏠 Inicio & Catálogo":
                         cols_num[i % 5].metric("Boleto", n)
 
 # ---------------------------------------------------------
-# SECCIÓN: VERIFICADOR DE BOLETOS
+# SECCIÓN: VERIFICADOR
 # ---------------------------------------------------------
 elif seccion == "🔎 Verificador de boletos":
     st.header("🔎 Verificador de Boletos")
-    st.write(
-        "Consulta instantáneamente todos los boletos asignados a tu número de teléfono."
-    )
-
-    tel_buscar = st.text_input(
-        "Ingresa tu número de teléfono / WhatsApp registrado:"
-    )
+    tel_buscar = st.text_input("Ingresa tu número de WhatsApp registrado:")
 
     if st.button("Buscar Mis Boletos"):
-        if not tel_buscar:
-            st.warning("Por favor ingresa un número de teléfono.")
-        else:
+        if tel_buscar:
             conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
             c.execute(
-                """
-                SELECT b.numero, b.estado, r.nombre, b.fecha_reserva 
-                FROM boletos b
-                JOIN rifas r ON b.rifa_id = r.id
-                WHERE b.usuario_telefono = ?
-                """,
+                "SELECT b.numero, b.estado, r.nombre FROM boletos b JOIN rifas r ON b.rifa_id = r.id WHERE b.usuario_telefono = ?",
                 (tel_buscar,),
             )
             mis_boletos = c.fetchall()
             conn.close()
 
-            if not mis_boletos:
-                st.info(
-                    "No se encontraron boletos registrados con este número."
-                )
-            else:
+            if mis_boletos:
                 st.success(f"Se encontraron {len(mis_boletos)} boletos:")
-
-                for num, est, rifa_nom, fecha in mis_boletos:
-                    col_a, col_b, col_c = st.columns(3)
-                    col_a.write(f"🎟️ **Boleto:** `{num}`")
-                    col_b.write(f"🏆 **Rifa:** {rifa_nom}")
-                    col_c.write(f"📌 **Estado:** `{est.upper()}`")
+                for num, est, rifa_nom in mis_boletos:
+                    c1, c2, c3 = st.columns(3)
+                    c1.write(f"🎟️ **Boleto:** `{num}`")
+                    c2.write(f"🏆 **Rifa:** {rifa_nom}")
+                    c3.write(f"📌 **Estado:** `{est.upper()}`")
                     st.markdown("---")
+            else:
+                st.info("No se encontraron registros con este número.")
 
 # ---------------------------------------------------------
-# SECCIÓN: CÓMO JUGAR
+# OTRAS SECCIONES
 # ---------------------------------------------------------
 elif seccion == "❓ Cómo jugar":
-    st.header("❓ Cómo Participar en Rifas Luxury RD")
+    st.header("❓ Cómo Participar")
     st.markdown(
-        """
-    1. **Explora el catálogo:** Elige tu premio preferido (autos, celulares, consolas, dinero).
-    2. **Selecciona tus números:** Elige la cantidad de boletos que deseas comprar.
-    3. **Haz tu pago:** Realiza la transferencia a nuestras cuentas de **Banreservas** o **Banco Popular**.
-    4. **Sube tu comprobante:** Adjunta la imagen de tu transferencia en el formulario.
-    5. **Consulta tus boletos:** Usa nuestro **Verificador de Boletos** con tu número telefónico para confirmar tus números en tiempo real.
-    """
+        "1. Selecciona tu premio.\n2. Compra tus boletos.\n3. Transfiere por banco.\n4. Sube la foto del comprobante.\n5. Verifica tus números."
     )
 
-# ---------------------------------------------------------
-# SECCIÓN: SOPORTE IA
-# ---------------------------------------------------------
 elif seccion == "🤖 Soporte IA":
     abrir_soporte_ia()
 
-# ---------------------------------------------------------
-# SECCIÓN: GANADORES
-# ---------------------------------------------------------
 elif seccion == "🏆 Ganadores":
     st.header("🏆 Ganadores Anteriores")
-    st.write("¡Felicitaciones a nuestros ganadores de ediciones pasadas!")
-    st.info("Próximamente publicaremos aquí la lista de entregas confirmadas.")
+    st.info("Próximamente publicaremos aquí los ganadores oficiales.")
 
-# ---------------------------------------------------------
-# SECCIÓN: ADMINISTRACIÓN
-# ---------------------------------------------------------
 elif seccion == "⚙️ Administración":
-    st.header("⚙️ Panel de Administración - Validar Boletos")
+    st.header("⚙️ Administración")
+    pass_admin = st.text_input("Contraseña", type="password")
 
-    pass_admin = st.text_input("Contraseña Administrador", type="password")
-
-    if pass_admin == "admin123":  # Cambia esta clave según prefieras
+    if pass_admin == "admin123":
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
-
         c.execute(
             """
             SELECT b.id, b.numero, b.usuario_nombre, b.usuario_telefono, b.metodo_pago, b.comprobante, b.fecha_reserva, r.nombre
-            FROM boletos b
-            JOIN rifas r ON b.rifa_id = r.id
+            FROM boletos b JOIN rifas r ON b.rifa_id = r.id
             WHERE b.estado = 'reservado'
             """
         )
         pendientes = c.fetchall()
 
         if not pendientes:
-            st.info("No hay reservas pendientes por confirmar.")
+            st.info("No hay pagos pendientes por confirmar.")
         else:
-            st.write(f"Hay **{len(pendientes)}** reservas pendientes de verificación:")
-
             for boleto in pendientes:
                 b_id, num, nombre, tel, pago, comp, fecha, rifa_nom = boleto
-
                 st.markdown(f"#### 🎟️ Boleto `{num}` — {rifa_nom}")
-                st.write(f"👤 **Cliente:** {nombre} | 📱 **Teléfono:** {tel}")
-                st.write(f"💳 **Banco:** {pago} | 📅 **Fecha:** {fecha}")
+                st.write(f"👤 {nombre} | 📱 {tel} | 💳 {pago}")
 
                 if comp and os.path.exists(comp):
-                    st.image(comp, width=300)
+                    st.image(comp, width=250)
 
                 c1, c2 = st.columns(2)
-
                 if c1.button(f"Aceptar {num}", key=f"acc_{b_id}"):
                     c.execute(
                         "UPDATE boletos SET estado = 'confirmado' WHERE id = ?",
                         (b_id,),
                     )
                     conn.commit()
-                    st.success(f"Boleto {num} confirmado correctamente.")
                     st.rerun()
 
                 if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
                     c.execute(
-                        """
-                        UPDATE boletos
-                        SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
-                            metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
-                        WHERE id = ?
-                        """,
+                        "UPDATE boletos SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL WHERE id = ?",
                         (b_id,),
                     )
                     conn.commit()
-                    st.warning(f"Boleto {num} liberado nuevamente.")
                     st.rerun()
-
                 st.markdown("---")
-
         conn.close()
     elif pass_admin != "":
         st.error("Contraseña incorrecta.")
