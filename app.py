@@ -5,15 +5,14 @@ import random
 from PIL import Image
 import streamlit as st
 
-DB_FILE = "rifas_v2.db"
-WHATSAPP_NUMERO = "8294835217"  # ⚠️ REEMPLAZA CON TU NÚMERO DE TELÉFONO REAL
+DB_FILE = "rifas_v4.db"
+WHATSAPP_NUMERO = "8294835217"  # ⚠️ Coloca tu número de WhatsApp real
 
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
-    # Tabla de Rifas
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS rifas (
@@ -29,7 +28,6 @@ def init_db():
         """
     )
 
-    # Tabla de Boletos
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS boletos (
@@ -46,7 +44,6 @@ def init_db():
         """
     )
 
-    # Insertar rifas iniciales si la tabla está vacía
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
         c.execute(
@@ -58,10 +55,10 @@ def init_db():
                 "PlayStation 5 Pro",
                 "Juego",
                 5.0,
-                15,
+                10,
                 100000,
                 "play.jpg",
-                "Una vez se complete la lista sacamos el ganador",
+                "Fecha pendiente de asignar",
             ),
         )
         c.execute(
@@ -76,11 +73,10 @@ def init_db():
                 10,
                 100000,
                 "iphone.jpg",
-                "Cada 20% sacamos un ganador",
+                "Se coloca con el 80% vendido",
             ),
         )
 
-        # Generar 100,000 boletos por rifa
         for rifa_id in [1, 2]:
             numeros = [f"{i:05d}" for i in range(1, 100001)]
             c.executemany(
@@ -90,6 +86,9 @@ def init_db():
 
         conn.commit()
 
+    # FORZADO DE ACTUALIZACIÓN: Asegura el mínimo de 10 boletos siempre
+    c.execute("UPDATE rifas SET min_boletos = 10 WHERE id = 2")
+    conn.commit()
     conn.close()
 
 
@@ -113,7 +112,7 @@ init_db()
 liberar_expirados()
 
 # ---------------------------------------------------------
-# 2. NAV Y HEADER PRINCIPAL
+# NAV Y HEADER PRINCIPAL
 # ---------------------------------------------------------
 st.markdown(
     """
@@ -127,7 +126,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- MENÚ LATERAL ---
 seccion = st.sidebar.radio(
     "Navegación",
     [
@@ -141,7 +139,7 @@ seccion = st.sidebar.radio(
 )
 
 # ---------------------------------------------------------
-# 3. SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
+# SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
     col_logo, col_titulo = st.columns([1, 2])
@@ -398,7 +396,7 @@ if seccion == "🏠 Inicio & Catálogo":
                         cols_num[i % 5].metric("Boleto", n)
 
 # ---------------------------------------------------------
-# 4. SECCIÓN: VERIFICADOR DE BOLETOS
+# SECCIÓN: VERIFICADOR DE BOLETOS
 # ---------------------------------------------------------
 elif seccion == "🔎 Verificador de boletos":
     st.header("🔎 Verificador de Boletos")
@@ -443,7 +441,7 @@ elif seccion == "🔎 Verificador de boletos":
                     st.markdown("---")
 
 # ---------------------------------------------------------
-# 5. SECCIÓN: CÓMO JUGAR
+# SECCIÓN: CÓMO JUGAR
 # ---------------------------------------------------------
 elif seccion == "❓ Cómo jugar":
     st.header("❓ Cómo Jugar en Rifas Luxury RD")
@@ -458,7 +456,7 @@ elif seccion == "❓ Cómo jugar":
     )
 
 # ---------------------------------------------------------
-# 6. SECCIÓN: SOPORTE IA CON DERIVACIÓN HUMANA
+# SECCIÓN: SOPORTE IA CON DERIVACIÓN HUMANA
 # ---------------------------------------------------------
 elif seccion == "🤖 Soporte IA":
     st.header("🤖 Asistente de Soporte Virtual")
@@ -480,7 +478,6 @@ elif seccion == "🤖 Soporte IA":
 
         txt = user_input.lower()
 
-        # Evaluación lógica de intenciones
         if any(w in txt for w in ["pago", "banco", "transferencia", "banreservas", "popular", "cuentas"]):
             respuesta = "Aceptamos transferencias por **Banreservas** y **Banco Popular**. Una vez realizada la transferencia, sube la foto del comprobante en el formulario de compra para reservar tus boletos."
         elif any(w in txt for w in ["verificar", "consultar", "mi boleto", "mis boletos", "donde estan"]):
@@ -508,14 +505,14 @@ elif seccion == "🤖 Soporte IA":
                 )
 
 # ---------------------------------------------------------
-# 7. SECCIÓN: GANADORES
+# SECCIÓN: GANADORES
 # ---------------------------------------------------------
 elif seccion == "🏆 Ganadores":
     st.header("🏆 Galería de Ganadores")
     st.write("Próximamente estaremos publicando las entregas directas a nuestros ganadores.")
 
 # ---------------------------------------------------------
-# 8. SECCIÓN: ADMINISTRACIÓN
+# SECCIÓN: ADMINISTRACIÓN
 # ---------------------------------------------------------
 elif seccion == "⚙️ Administración":
     st.header("⚙️ Panel de Administración")
