@@ -233,61 +233,6 @@ if st.sidebar.button("🤖 Abrir Chat de Soporte IA"):
     abrir_soporte_ia()
 
 # ---------------------------------------------------------
-# VENTANA DE CONFIRMACIÓN DE BOLETOS
-# ---------------------------------------------------------
-@st.dialog("🎟️ ¡Tus boletos fueron registrados!")
-def mostrar_ventana_boletos():
-    numeros = st.session_state.get("boletos_confirmados_ventana", [])
-    numeros_texto = ", ".join(numeros)
-
-    st.success("🎉 ¡Pago y comprobante recibidos correctamente!")
-    st.markdown("### Tus números de boletos")
-    st.code(numeros_texto, language="text")
-
-    st.markdown(
-        f"""
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="navigator.clipboard.writeText({numeros_texto!r})"
-                    style="padding:10px 18px; border-radius:10px; border:0;
-                    font-weight:700; cursor:pointer;">
-                📋 COPIAR BOLETOS
-            </button>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.warning(
-        "⏳ Tus boletos quedan reservados temporalmente y tendrán un plazo "
-        "máximo de 24 horas para ser confirmados."
-    )
-    st.caption(
-        "Guarda tus números. Puedes consultar su estado posteriormente "
-        "en el Verificador de Boletos."
-    )
-
-    if st.button("✅ ENTIENDO", use_container_width=True):
-        for clave in [
-            "boletos_confirmados_ventana",
-            "mostrar_confirmacion_boletos",
-            "rifa_seleccionada",
-            "nombre_rifa",
-            "precio_rifa",
-            "min_rifa",
-            "cant_boletos",
-            "nivel_boletos",
-            "paso_compra",
-            "banco_pago",
-            "nombre_cliente",
-            "telefono_cliente",
-        ]:
-            st.session_state.pop(clave, None)
-        st.rerun()
-
-if st.session_state.get("mostrar_confirmacion_boletos"):
-    mostrar_ventana_boletos()
-
-# ---------------------------------------------------------
 # SECCIÓN: INICIO Y CATÁLOGO
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
@@ -368,9 +313,6 @@ if seccion == "🏠 Inicio & Catálogo":
                 else f"📱 PARTICIPAR POR {r_nombre.upper()}"
             )
 
-            # Cada botón selecciona la rifa y reinicia el flujo de compra.
-            # Se usa on_click para que la selección quede guardada antes
-            # de volver a dibujar la página.
             def seleccionar_rifa(rifa_id, nombre, precio, minimo):
                 st.session_state["rifa_seleccionada"] = rifa_id
                 st.session_state["nombre_rifa"] = nombre
@@ -426,7 +368,6 @@ if seccion == "🏠 Inicio & Catálogo":
                     "Teléfono / WhatsApp (Ej: 8091234567)",
                     value=st.session_state.get("telefono_cliente", ""),
                 )
-                # Selección rápida por niveles + cantidad personalizada.
                 minimo_rifa = int(minimo)
                 precio_boleto = float(precio)
 
@@ -435,49 +376,32 @@ if seccion == "🏠 Inicio & Catálogo":
                     f"Cantidad mínima: {minimo_rifa} boletos. "
                     "Toca un nivel para seleccionarlo automáticamente."
                 )
-       niveles = [
-          ("🟢 NORMAL", minimo_rifa),
-          ("🔵 DOBLE", minimo_rifa * 2),
-          ("🟣 INTERMEDIO", minimo_rifa * 3),
-          ("🟠 PROFESIONAL", minimo_rifa * 5),
-          ("🔴 PRO", minimo_rifa * 10),
-      ]
-  st.markdown("### 🎟️ Elige tu cantidad de boletos")
 
-  nivel_cols = st.columns(5)
+                niveles = [
+                    ("🟢 NORMAL", minimo_rifa),
+                    ("🔵 DOBLE", minimo_rifa * 2),
+                    ("🟣 INTERMEDIO", minimo_rifa * 3),
+                    ("🟠 PROFESIONAL", minimo_rifa * 5),
+                    ("🔴 PRO", minimo_rifa * 10),
+                ]
 
-  for i, (nombre_nivel, cantidad_nivel) in enumerate(niveles):
-        if cantidad_nivel > 100:
-        cantidad_nivel = 100
+                nivel_cols = st.columns(len(niveles))
+                for i, (nombre_nivel, cantidad_nivel) in enumerate(niveles):
+                    cantidad_nivel = min(100, cantidad_nivel)
+                    if nivel_cols[i].button(
+                        f"{nombre_nivel} · {cantidad_nivel}",
+                        key=f"nivel_{st.session_state['rifa_seleccionada']}_{i}",
+                        use_container_width=True,
+                    ):
+                        st.session_state["cant_boletos"] = cantidad_nivel
+                        st.session_state["nivel_boletos"] = nombre_nivel
+                        st.rerun()
 
-      with nivel_cols[i]:
-        if st.button(
-            f"{nombre_nivel}\n{cantidad_nivel} boletos",
-            key=f"nivel_{st.session_state['rifa_seleccionada']}_{i}",
-            use_container_width=True,
-        ):
-            st.session_state["cant_boletos"] = cantidad_nivel
-            st.session_state["nivel_boletos"] = nombre_nivel
-            st.session_state["combo_seleccionado"] = cantidad_nivel
-            st.rerun()
+                cantidad_guardada = int(
+                    st.session_state.get("cant_boletos", minimo_rifa)
+                )
 
-            cantidad_guardada = int(
-    st.session_state.get(
-        "cant_boletos",
-        minimo_rifa
-     )
-   )
-            nivel_actual = st.session_state.get(
-    "nivel_boletos",
-    "🟢 NORMAL"
- )
-
-st.info(
-    f"🎟️ Cantidad seleccionada: **{cantidad_guardada} boletos** "
-    f"({nivel_actual})"
-)
-
-            cant_boletos = st.number_input(
+                cant_boletos = st.number_input(
                     "✏️ O escribe la cantidad manualmente",
                     min_value=minimo_rifa,
                     max_value=100,
@@ -486,13 +410,11 @@ st.info(
                     key=f"cant_manual_{st.session_state['rifa_seleccionada']}",
                 )
 
-                # Mostrar siempre el cálculo actualizado.
                 total_pagar = int(cant_boletos) * precio_boleto
                 st.markdown(
                     f"### 💰 {int(cant_boletos)} boletos × RD$ {precio_boleto:.2f} "
                     f"= **RD$ {total_pagar:.2f}**"
                 )
-
 
                 continuar_datos = st.form_submit_button(
                     "➡️ CONTINUAR AL PAGO",
@@ -542,8 +464,6 @@ st.info(
                 unsafe_allow_html=True,
             )
 
-            # Botón de copiar independiente de Streamlit para que funcione
-            # directamente desde el navegador.
             st.markdown(
                 f"""
                 <button onclick="navigator.clipboard.writeText('{cuenta}').then(
@@ -685,8 +605,6 @@ st.info(
                                 "Boleto", n, delta="Pendiente", delta_color="off"
                             )
 
-                        # Evita que al actualizar la página se vuelva a mostrar
-                        # inmediatamente el formulario de compra.
                         st.session_state["compra_completada"] = True
                         st.session_state.pop("rifa_seleccionada", None)
                         st.session_state.pop("paso_compra", None)
