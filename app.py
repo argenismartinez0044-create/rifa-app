@@ -131,37 +131,24 @@ liberar_expirados()
 st.markdown(
     """
     <style>
-    .main-title { font-size: 3rem; font-weight: 800; text-align: center; color: #F5C518; }
-    .sub-title { font-size: 1.2rem; text-align: center; color: #E0E0E0; margin-bottom: 2rem; }
-    .gold-button { background-color: #F5C518; color: #000; font-weight: bold; border-radius: 8px; padding: 10px 20px; }
-    .card-box { background-color: #121212; border: 1px solid #2D2D2D; border-radius: 12px; padding: 15px; }
+    /* Fondo degradado oscuro premium */
+    .stApp {
+        background: linear-gradient(135deg, #0b0d17 0%, #171b2e 50%, #080910 100%) !important;
+        color: #FFFFFF;
+    }
     </style>
-""",
-   unsafe_allow_html =True,
+    """,
+    unsafe_allow_html=True
 )
-
-# Menú superior en el Sidebar
-st.sidebar.image("premio.jpg", use_container_width=True)
-seccion = st.sidebar.radio(
-    "Navegación",
-    [
-        "🏠 Inicio & Catálogo",
-        "❓ Cómo jugar",
-        "🏆 Ganadores",
-        "🔎 Verificador de boletos",
-        "⚙️ Administración",
-    ],
-)
-
 # ---------------------------------------------------------
 # 3. SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
    # Encabezado con Logo en la esquina izquierda y Título a la derecha
-    col_logo, col_titulo = st.columns([1, 3])
+    col_logo, col_titulo = st.columns([1, 2])
 
     with col_logo:
-        st.image("logo.png", width=130)
+        st.image("logo.png", width=250)
 
     with col_titulo:
         st.markdown(
