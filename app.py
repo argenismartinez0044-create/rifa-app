@@ -1,7 +1,11 @@
 import sqlite3
+import datetime
+import os
+import random
+from PIL import Image
 import streamlit as st
 
-DB_FILE = "rifas_v2.db"  # Cambiado para regenerar la base de datos limpia con 100k boletos
+DB_FILE = "rifas_v2.db"
 
 
 def init_db():
@@ -75,7 +79,7 @@ def init_db():
             ),
         )
 
-        # Generar los 100,000 boletos por rifa (00001 a 100000)
+        # Generar 100,000 boletos por rifa
         for rifa_id in [1, 2]:
             numeros = [f"{i:05d}" for i in range(1, 100001)]
             c.executemany(
@@ -86,10 +90,11 @@ def init_db():
         conn.commit()
 
     conn.close()
+
+
 def liberar_expirados():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    # Liberar reservas pendientes mayores a 15 minutos
     hace_15_min = datetime.datetime.now() - datetime.timedelta(minutes=15)
     c.execute(
         """
@@ -101,7 +106,8 @@ def liberar_expirados():
     )
     conn.commit()
     conn.close()
-    
+
+
 init_db()
 liberar_expirados()
 
@@ -111,46 +117,53 @@ liberar_expirados()
 st.markdown(
     """
     <style>
-    /* Fondo degradado oscuro premium */
     .stApp {
         background: linear-gradient(135deg, #0b0d17 0%, #171b2e 50%, #080910 100%) !important;
         color: #FFFFFF;
     }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 # --- MENÚ LATERAL ---
-seccion = st.sidebar.radio("Navegación", ["🏠 Inicio & Catálogo", "🎟️ Mis Boletos", "🏆 Ganadores"])
+seccion = st.sidebar.radio(
+    "Navegación",
+    [
+        "🏠 Inicio & Catálogo",
+        "🔎 Verificador de boletos",
+        "❓ Cómo jugar",
+        "🏆 Ganadores",
+        "⚙️ Administración",
+    ],
+)
 
 # ---------------------------------------------------------
 # 3. SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
-   # Encabezado con Logo en la esquina izquierda y Título a la derecha
     col_logo, col_titulo = st.columns([1, 2])
 
     with col_logo:
-        st.image("logo.png", width=250)
+        if os.path.exists("logo.png"):
+            st.image("logo.png", width=250)
 
     with col_titulo:
         st.markdown(
-            "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Experiencia exclusiva — La plataforma más lujosa para participar y ganar.</p>", 
-            unsafe_allow_html=True
+            "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Experiencia exclusiva — La plataforma más lujosa para participar y ganar.</p>",
+            unsafe_allow_html=True,
         )
         st.markdown(
-            "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios extraordinarios garantizados</h1>", 
-            unsafe_allow_html=True
+            "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios extraordinarios garantizados</h1>",
+            unsafe_allow_html=True,
         )
 
     st.markdown("---")
 
-    # Botones desplegables informativos
-    with st.expander("📺 **¿CÓMO JUGAR?** — 5 pasos simples para participar y ganar"):
-        st.write(
-            "1. Selecciona la rifa en la que deseas participar del catálogo."
-        )
+    with st.expander(
+        "📺 **¿CÓMO JUGAR?** — 5 pasos simples para participar y ganar"
+    ):
+        st.write("1. Selecciona la rifa en la que deseas participar del catálogo.")
         st.write(
             "2. Elige la cantidad de boletos que deseas comprar y completa tus datos."
         )
@@ -165,10 +178,9 @@ if seccion == "🏠 Inicio & Catálogo":
     st.markdown("---")
     st.subheader("🛍️ CATÁLOGO DE RIFAS")
 
-    # Filtros de Categorías
     cat_filtro = st.radio(
         "Filtrar por categoría:",
-        ["TODOS", "DINERO", "TELÉFONO", "VEHÍCULOS"],
+        ["TODOS", "Juego", "TELÉFONO", "DINERO", "VEHÍCULOS"],
         horizontal=True,
     )
 
@@ -183,7 +195,6 @@ if seccion == "🏠 Inicio & Catálogo":
     rifas = c.fetchall()
     conn.close()
 
-    # Despliegue de tarjetas de rifa en cuadrícula
     cols = st.columns(2)
     for idx, r in enumerate(rifas):
         (
@@ -197,7 +208,6 @@ if seccion == "🏠 Inicio & Catálogo":
             r_fecha,
         ) = r
 
-        # Calcular progreso de ventas (%)
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute(
@@ -231,13 +241,12 @@ if seccion == "🏠 Inicio & Catálogo":
                 st.session_state["precio_rifa"] = r_precio
                 st.session_state["min_rifa"] = r_min
 
-    # Formulario de compra si selecciona una rifa
     if "rifa_seleccionada" in st.session_state:
         st.markdown("---")
-        
-        nombre = st.session_state['nombre_rifa']
-        precio = st.session_state['precio_rifa']
-        
+
+        nombre = st.session_state["nombre_rifa"]
+        precio = st.session_state["precio_rifa"]
+
         st.markdown(
             f"""
             <div style="
@@ -273,13 +282,11 @@ if seccion == "🏠 Inicio & Catálogo":
                 ">Precio por boleto: <strong style="color: #F5C518;">RD$ {precio:.2f}</strong></p>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         st.subheader("💳 Métodos de Pago")
-        st.caption(
-            "Selecciona tu banco para ver la cuenta de transferencia:"
-        )
+        st.caption("Selecciona tu banco para ver la cuenta de transferencia:")
 
         tab_banres, tab_pop = st.tabs(["Banreservas", "Banco Popular"])
 
@@ -337,7 +344,6 @@ if seccion == "🏠 Inicio & Catálogo":
                 conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
 
-                # Buscar boletos disponibles
                 c.execute(
                     "SELECT id, numero FROM boletos WHERE rifa_id = ? AND estado = 'disponible'",
                     (st.session_state["rifa_seleccionada"],),
@@ -362,10 +368,10 @@ if seccion == "🏠 Inicio & Catálogo":
                         c.execute(
                             """
                             UPDATE boletos 
-                            SET estado = 'reservado', nombre_cliente = ?, telefono = ?, 
-                                metodo_pago = ?, comprobante_path = ?, fecha_reserva = ?
+                            SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?, 
+                                metodo_pago = ?, comprobante = ?, fecha_reserva = ?
                             WHERE id = ?
-                        """,
+                            """,
                             (
                                 nombre_cliente,
                                 telefono_cliente,
@@ -413,8 +419,8 @@ elif seccion == "🔎 Verificador de boletos":
                 SELECT b.numero, b.estado, r.nombre, b.fecha_reserva 
                 FROM boletos b
                 JOIN rifas r ON b.rifa_id = r.id
-                WHERE b.telefono = ?
-            """,
+                WHERE b.usuario_telefono = ?
+                """,
                 (tel_buscar,),
             )
             mis_boletos = c.fetchall()
@@ -472,11 +478,11 @@ elif seccion == "⚙️ Administración":
         st.subheader("📌 Reservas Pendientes por Verificar")
         c.execute(
             """
-            SELECT b.id, b.numero, b.nombre_cliente, b.telefono, b.metodo_pago, b.comprobante_path, r.nombre 
+            SELECT b.id, b.numero, b.usuario_nombre, b.usuario_telefono, b.metodo_pago, b.comprobante, r.nombre 
             FROM boletos b
             JOIN rifas r ON b.rifa_id = r.id
             WHERE b.estado = 'reservado'
-        """
+            """
         )
         pendientes = c.fetchall()
 
@@ -487,7 +493,7 @@ elif seccion == "⚙️ Administración":
                 st.write(
                     f"**Rifa:** {r_nom} | **Boleto:** `{num}` | **Cliente:** {nom} | **Tel:** {tel} | **Banco:** {met}"
                 )
-                if os.path.exists(img_p):
+                if img_p and os.path.exists(img_p):
                     st.image(img_p, width=250)
 
                 c1, c2 = st.columns(2)
@@ -503,10 +509,10 @@ elif seccion == "⚙️ Administración":
                     c.execute(
                         """
                         UPDATE boletos 
-                        SET estado = 'disponible', nombre_cliente = NULL, telefono = NULL, 
-                            metodo_pago = NULL, comprobante_path = NULL, fecha_reserva = NULL
+                        SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, 
+                            metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
                         WHERE id = ?
-                    """,
+                        """,
                         (b_id,),
                     )
                     conn.commit()
@@ -514,4 +520,3 @@ elif seccion == "⚙️ Administración":
                 st.markdown("---")
 
         conn.close()
-
