@@ -137,7 +137,7 @@ st.markdown(
     .card-box { background-color: #121212; border: 1px solid #2D2D2D; border-radius: 12px; padding: 15px; }
     </style>
 """,
-    unsafe_allow_style=True,
+   unsafe_allow_html =True,
 )
 
 # Menú superior en el Sidebar
