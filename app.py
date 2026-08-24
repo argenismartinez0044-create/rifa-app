@@ -1,21 +1,7 @@
-import datetime
-import os
-import random
 import sqlite3
 import streamlit as st
-from PIL import Image
 
-# ---------------------------------------------------------
-# 1. CONFIGURACIÓN Y BASE DE DATOS
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="Sirio Rifas RD",
-    page_icon="🎟️",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
-
-DB_FILE = "rifa_sirio.db"
+DB_FILE = "rifas_v2.db"  # Cambiado para regenerar la base de datos limpia con 100k boletos
 
 
 def init_db():
@@ -38,7 +24,24 @@ def init_db():
         """
     )
 
-    # Insertar rifas por defecto si la tabla está vacía
+    # Tabla de Boletos
+    c.execute(
+        """
+        CREATE TABLE IF NOT EXISTS boletos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rifa_id INTEGER,
+            numero TEXT,
+            estado TEXT DEFAULT 'disponible',
+            usuario_nombre TEXT,
+            usuario_telefono TEXT,
+            metodo_pago TEXT,
+            comprobante TEXT,
+            fecha_reserva DATETIME
+        )
+        """
+    )
+
+    # Insertar rifas iniciales si la tabla está vacía
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
         c.execute(
@@ -72,30 +75,17 @@ def init_db():
             ),
         )
 
-    # FORZAR ACTUALIZACIÓN para bases de datos existentes en Streamlit Cloud
-    c.execute("UPDATE rifas SET imagen = 'play.jpg', total_boletos = 100000 WHERE id = 1 OR nombre LIKE '%Play%'")
-    c.execute("UPDATE rifas SET imagen = 'iphone.jpg', total_boletos = 100000 WHERE id = 2 OR nombre LIKE '%iPhone%'")
+        # Generar los 100,000 boletos por rifa (00001 a 100000)
+        for rifa_id in [1, 2]:
+            numeros = [f"{i:05d}" for i in range(1, 100001)]
+            c.executemany(
+                "INSERT INTO boletos (rifa_id, numero) VALUES (?, ?)",
+                [(rifa_id, n) for n in numeros],
+            )
 
-    conn.commit()
+        conn.commit()
+
     conn.close()
-
-
-def liberar_expirados():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    limite = datetime.datetime.now() - datetime.timedelta(hours=24)
-    c.execute(
-        """
-        UPDATE boletos 
-        SET estado = 'disponible', nombre_cliente = NULL, telefono = NULL, 
-            metodo_pago = NULL, comprobante_path = NULL, fecha_reserva = NULL
-        WHERE estado = 'reservado' AND fecha_reserva < ?
-    """,
-        (limite,),
-    )
-    conn.commit()
-    conn.close()
-
 
 init_db()
 liberar_expirados()
