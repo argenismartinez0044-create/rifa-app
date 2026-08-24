@@ -86,7 +86,22 @@ def init_db():
         conn.commit()
 
     conn.close()
-
+def liberar_expirados():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    # Liberar reservas pendientes mayores a 15 minutos
+    hace_15_min = datetime.datetime.now() - datetime.timedelta(minutes=15)
+    c.execute(
+        """
+        UPDATE boletos 
+        SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
+        WHERE estado = 'apartado' AND fecha_reserva < ?
+        """,
+        (hace_15_min,),
+    )
+    conn.commit()
+    conn.close()
+    
 init_db()
 liberar_expirados()
 
