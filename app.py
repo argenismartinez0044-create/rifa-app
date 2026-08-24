@@ -549,9 +549,9 @@ if seccion == "🏠 Inicio & Catálogo":
                         """
                         UPDATE boletos 
                         SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?, 
-                        metodo_pago = ?, comprobante = ?, fecha_reserva = ?
+                            metodo_pago = ?, comprobante = ?, fecha_reserva = ?
                         WHERE id = ?
-                            """,
+                        """,
                             (
                                 nombre_cliente,
                                 telefono_cliente,
