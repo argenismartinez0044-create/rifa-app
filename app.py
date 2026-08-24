@@ -530,40 +530,39 @@ if seccion == "🏠 Inicio & Catálogo":
                 )
                 disp = c.fetchall()
 
-            if len(disp) < cant_boletos:
-                st.error("No hay suficientes boletos disponibles.")
-            else:
-                 asignados = random.sample(disp, cant_boletos)
+           if len(disp) < cant_boletos:
+            st.error("No hay suficientes boletos disponibles.")
+        else:
+            asignados = random.sample(disp, cant_boletos)
 
-                 os.makedirs("comprobantes", exist_ok=True)
-                 path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.jpg"
-                 img = Image.open(comprobante_file)
-                 img.save(path_comp)
+            os.makedirs("comprobantes", exist_ok=True)
+            path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.png"
+            img = Image.open(comprobante_file)
+            img.save(path_comp)
 
-                 ahora = datetime.datetime.now()
-                 num_asignados = []
+            ahora = datetime.datetime.now()
+            num_asignados = []
 
-                for b_id, b_num in asignados:
-                    num_asignados.append(b_num)
-                    c.execute(
-                        """
-                        UPDATE boletos 
-                        SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?, 
-                            metodo_pago = ?, comprobante = ?, fecha_reserva = ?
-                        WHERE id = ?
-                        """,
-                            (
-                                nombre_cliente,
-                                telefono_cliente,
-                                banco_pago,
-                                path_comp,
-                                ahora,
-                                b_id,
-                            ),
-                        )
+            for b_id, b_num in asignados:
+                num_asignados.append(b_num)
+                c.execute(
+                    """
+                    UPDATE boletos
+                    SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?,
+                        metodo_pago = ?, comprobante = ?, fecha_reserva = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        nombre_cliente,
+                        telefono_cliente,
+                        banco_pago,
+                        path_comp,
+                        ahora,
+                        b_id,
+                    ),
+                )
 
-                    conn.commit()
-                    conn.close()
+            conn.commit()
 
                     st.success("🎉 ¡Boletos asignados exitosamente!")
                     st.warning(
