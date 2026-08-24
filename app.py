@@ -72,8 +72,7 @@ if opcion == "Comprar Boletos":
 
     # Carga opcional de la imagen de la rifa
     if os.path.exists("premio.jpg"):
-        st.image("premio.jpg", caption="Premio Principal", use_column_width=True)
-
+        st.image("premio.jpg", caption="Premio Principal", use_container_width=True)
     st.markdown("---")
     st.header("💳 Métodos de Pago")
     st.info(
