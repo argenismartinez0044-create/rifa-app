@@ -5,7 +5,8 @@ import sqlite3
 from PIL import Image
 import streamlit as st
 
-DB_FILE = "rifas_v4.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BASE_DIR, "rifas_v4.db")
 WHATSAPP_NUMERO = "8294835217"
 
 st.set_page_config(page_title="Rifas Sirio RD", page_icon="🎲", layout="wide")
@@ -300,8 +301,8 @@ if st.session_state.get("mostrar_confirmacion_boletos"):
 if seccion == "🏠 Inicio & Catálogo":
     col_logo, col_titulo = st.columns([1, 2])
     with col_logo:
-        if os.path.exists("logo.png"):
-            st.image("logo.png", width=220)
+        if os.path.exists(os.path.join(BASE_DIR, "logo.png")):
+            st.image(os.path.join(BASE_DIR, "logo.png"), width=220)
     with col_titulo:
         st.markdown(
             "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Plataforma Exclusiva de Rifas</p>",
@@ -359,8 +360,8 @@ if seccion == "🏠 Inicio & Catálogo":
         with cols[idx % 2]:
             st.markdown(f"### 🏷️ {r_nombre}")
             st.caption(f"Categoría: **{r_cat}**")
-            if os.path.exists(r_img):
-                st.image(r_img, use_container_width=True)
+            if os.path.exists(os.path.join(BASE_DIR, r_img)):
+                st.image(os.path.join(BASE_DIR, r_img), use_container_width=True)
 
             st.write(f"📅 **Fecha:** {r_fecha}")
             st.write(f"📊 **PROGRESO: {progreso}%**")
@@ -383,6 +384,7 @@ if seccion == "🏠 Inicio & Catálogo":
                 st.session_state["nombre_rifa"] = nombre
                 st.session_state["precio_rifa"] = precio
                 st.session_state["min_rifa"] = minimo
+                st.session_state.pop("banco_pago", None)
                 st.session_state["paso_compra"] = 1
 
             st.button(
@@ -503,11 +505,12 @@ if seccion == "🏠 Inicio & Catálogo":
                     st.session_state["paso_compra"] = 2
                     st.rerun()
 
-        # PASO 2: después de los datos se muestra el banco y la cuenta.
+        # PASO 2: primero se elige el banco; los datos de la cuenta
+        # NO aparecen hasta que el cliente seleccione uno de los logos.
         elif paso == 2:
             st.subheader("💳 2. Selecciona el banco para realizar el depósito")
+            st.caption("Selecciona el logo del banco. La información de la cuenta aparecerá después de elegirlo.")
 
-            # Selección visual de banco mediante sus logos.
             bancos = {
                 "Banreservas": {
                     "logo": "banreservas.png",
@@ -521,88 +524,103 @@ if seccion == "🏠 Inicio & Catálogo":
                 },
             }
 
-            banco_actual = st.session_state.get("banco_pago", "Banreservas")
+            banco_pago = st.session_state.get("banco_pago")
             banco_cols = st.columns(2)
 
             for i, nombre_banco in enumerate(bancos):
                 datos_banco = bancos[nombre_banco]
+                logo_path = os.path.join(BASE_DIR, datos_banco["logo"])
+
                 with banco_cols[i]:
-                    if os.path.exists(datos_banco["logo"]):
-                        st.image(datos_banco["logo"], use_container_width=True)
+                    # El logo se carga desde la misma carpeta del programa.
+                    if os.path.exists(logo_path):
+                        st.image(logo_path, use_container_width=True)
                     else:
-                        st.markdown(
-                            f"<div style='height:120px; display:flex; align-items:center; "
-                            f"justify-content:center; border:1px solid rgba(255,255,255,.2); "
-                            f"border-radius:12px; font-size:1.2rem; font-weight:800;'>"
-                            f"🏦 {nombre_banco}</div>",
-                            unsafe_allow_html=True,
+                        st.warning(
+                            f"No se encontró {datos_banco['logo']}. "
+                            f"Coloca ese archivo en la misma carpeta de {os.path.basename(__file__)}."
                         )
 
-                    seleccionado = banco_actual == nombre_banco
+                    seleccionado = banco_pago == nombre_banco
                     if st.button(
-                        "✅ SELECCIONADO" if seleccionado else f"SELECCIONAR {nombre_banco.upper()}",
-                        key=f"seleccionar_banco_{nombre_banco}",
+                        "✅ BANCO SELECCIONADO" if seleccionado else f"SELECCIONAR {nombre_banco.upper()}",
+                        key=f"seleccionar_banco_{i}",
                         use_container_width=True,
                     ):
                         st.session_state["banco_pago"] = nombre_banco
                         st.rerun()
 
-            banco_pago = st.session_state.get("banco_pago", "Banreservas")
-            datos_banco = bancos[banco_pago]
-            titular = datos_banco["titular"]
-            cuenta = datos_banco["cuenta"]
+            # Mientras no haya banco seleccionado, NO se muestran cuentas.
+            if not banco_pago:
+                st.info("👆 Selecciona Banreservas o Banco Popular para ver los datos de transferencia.")
 
-            st.markdown(
-                f"""
-                <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
-                            padding: 18px; margin-top: 16px;">
-                    <h4>🏦 {banco_pago}</h4>
-                    <p>Tipo de cuenta: <strong>Ahorros</strong></p>
-                    <p>Titular: <strong>{titular}</strong></p>
-                    <p>Número de cuenta:</p>
-                    <div style="font-size: 1.6rem; font-weight: 800;
-                                letter-spacing: 2px;">{cuenta}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            st.markdown(
-                f"""
-                <button onclick="navigator.clipboard.writeText('{cuenta}').then(
-                    () => this.innerText='✅ CUENTA COPIADA'
-                )"
-                style="width:100%; padding:12px; margin-top:10px; border:0;
-                       border-radius:8px; background:#F5C518; color:#000;
-                       font-weight:800; cursor:pointer;">
-                    📋 COPIAR NÚMERO DE CUENTA
-                </button>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            total_pagar = st.session_state["cant_boletos"] * precio
-            st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:.2f}**")
-            st.info("Realiza el depósito y luego sube la foto del volante/comprobante.")
-
-            col1, col2 = st.columns(2)
-            with col1:
                 if st.button(
                     "⬅️ VOLVER A MIS DATOS",
-                    key="volver_datos",
+                    key="volver_datos_sin_banco",
                     use_container_width=True,
                 ):
                     st.session_state["paso_compra"] = 1
                     st.rerun()
+            else:
+                datos_banco = bancos[banco_pago]
+                titular = datos_banco["titular"]
+                cuenta = datos_banco["cuenta"]
+                logo_path = os.path.join(BASE_DIR, datos_banco["logo"])
 
-            with col2:
-                if st.button(
-                    "➡️ CONTINUAR Y SUBIR COMPROBANTE",
-                    key="continuar_comprobante",
-                    use_container_width=True,
-                ):
-                    st.session_state["paso_compra"] = 3
-                    st.rerun()
+                if os.path.exists(logo_path):
+                    st.image(logo_path, width=220)
+
+                st.markdown(
+                    f"""
+                    <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
+                                padding: 18px; margin-top: 16px;">
+                        <h4>🏦 {banco_pago}</h4>
+                        <p>Tipo de cuenta: <strong>Ahorros</strong></p>
+                        <p>Titular: <strong>{titular}</strong></p>
+                        <p>Número de cuenta:</p>
+                        <div style="font-size: 1.6rem; font-weight: 800;
+                                    letter-spacing: 2px;">{cuenta}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                st.markdown(
+                    f"""
+                    <button onclick="navigator.clipboard.writeText('{cuenta}').then(
+                        () => this.innerText='✅ CUENTA COPIADA'
+                    )"
+                    style="width:100%; padding:12px; margin-top:10px; border:0;
+                           border-radius:8px; background:#F5C518; color:#000;
+                           font-weight:800; cursor:pointer;">
+                        📋 COPIAR NÚMERO DE CUENTA
+                    </button>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                total_pagar = st.session_state["cant_boletos"] * precio
+                st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:.2f}**")
+                st.info("Realiza el depósito y luego continúa para subir la foto del volante/comprobante.")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button(
+                        "⬅️ VOLVER A MIS DATOS",
+                        key="volver_datos",
+                        use_container_width=True,
+                    ):
+                        st.session_state["paso_compra"] = 1
+                        st.rerun()
+
+                with col2:
+                    if st.button(
+                        "➡️ CONTINUAR Y SUBIR COMPROBANTE",
+                        key="continuar_comprobante",
+                        use_container_width=True,
+                    ):
+                        st.session_state["paso_compra"] = 3
+                        st.rerun()
 
         # PASO 3: solamente después de elegir banco aparece el cargador.
         elif paso == 3:
@@ -656,15 +674,16 @@ if seccion == "🏠 Inicio & Catálogo":
                         conn.close()
                     else:
                         asignados = random.sample(disp, cant_boletos)
-                        os.makedirs("comprobantes", exist_ok=True)
+                        os.makedirs(os.path.join(BASE_DIR, "comprobantes"), exist_ok=True)
 
                         extension = os.path.splitext(comprobante_file.name)[1].lower()
                         if extension not in [".png", ".jpg", ".jpeg"]:
                             extension = ".png"
 
-                        path_comp = (
-                            f"comprobantes/{st.session_state['telefono_cliente']}_"
-                            f"{datetime.datetime.now().timestamp()}{extension}"
+                        path_comp = os.path.join(
+                            BASE_DIR,
+                            "comprobantes",
+                            f"{st.session_state['telefono_cliente']}_{datetime.datetime.now().timestamp()}{extension}",
                         )
 
                         imagen_comprobante = Image.open(comprobante_file)
