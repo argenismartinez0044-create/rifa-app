@@ -293,7 +293,7 @@ if seccion == "🏠 Inicio & Catálogo":
             st.markdown(f"### 🏷️ {r_nombre}")
             st.caption(f"Categoría: **{r_cat}**")
             if os.path.exists(r_img):
-                st.image(r_img, use_column_width=True)
+              st.image(r_img, use_container_width=True)
 
             st.write(f"📅 **Fecha:** {r_fecha}")
             st.write(f"📊 **PROGRESO: {progreso}%**")
