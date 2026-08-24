@@ -412,11 +412,11 @@ if seccion == "🏠 Inicio & Catálogo":
                                 b_id,
                             ),
                         )
-                    conn.commit()
-                    conn.close()
+       conn.commit()
+       conn.close()
 
-               st.success("🎉 ¡Boletos asignados temporalmente!")
-st.info(...)
+       st.success("🎉 ¡Boletos asignados temporalmente!")
+       st.info(...)
 
 st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
 cols_num = st.columns(min(len(num_asignados), 5))
