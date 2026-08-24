@@ -157,14 +157,21 @@ seccion = st.sidebar.radio(
 # 3. SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
-    st.markdown(
-        "<p style='text-align: center; color: #F5C518; font-weight: bold;'>Experiencia exclusiva — La plataforma más lujosa para participar y ganar.</p>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<h1 class='main-title'>Premios extraordinarios garantizados</h1>",
-        unsafe_allow_html=True,
-    )
+   # Encabezado con Logo en la esquina izquierda y Título a la derecha
+    col_logo, col_titulo = st.columns([1, 3])
+
+    with col_logo:
+        st.image("logo.png", width=130)
+
+    with col_titulo:
+        st.markdown(
+            "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Experiencia exclusiva — La plataforma más lujosa para participar y ganar.</p>", 
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios extraordinarios garantizados</h1>", 
+            unsafe_allow_html=True
+        )
 
     st.markdown("---")
 
