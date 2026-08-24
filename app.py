@@ -2,8 +2,9 @@ import datetime
 import os
 import random
 import sqlite3
-from PIL import Image
 import streamlit as st
+import streamlit.components.v1 as components
+from PIL import Image
 
 DB_FILE = "rifas_v4.db"
 WHATSAPP_NUMERO = "8294835217"
@@ -240,73 +241,34 @@ if seccion == "🏠 Inicio & Catálogo":
             "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Plataforma Exclusiva de Rifas</p>",
             unsafe_allow_html=True,
         )
-    st.markdown(
+        st.markdown(
             "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios Exclusivos Garantizados</h1>",
-       )
-           # PASO 2: Banco, imágenes y número de cuenta
-        elif paso == 2:
-            st.subheader("💳 2. Selecciona el banco para realizar el depósito")
+            unsafe_allow_html=True,
+        )
 
-            banco_pago = st.radio(
-                "¿Dónde deseas depositar?",
-                ["Banreservas", "Banco Popular"],
-                horizontal=True,
-                key="banco_pago",
-            )
-
-            if banco_pago == "Banreservas":
-                titular = "ARGENIS MARTINEZ C."
-                cuenta = "9606561652"
-                img_banco = "banreservas.png" if os.path.exists("banreservas.png") else ("barreserva.png" if os.path.exists("barreserva.png") else None)
-            else:
-                titular = "ARGENIS MARTINEZ"
-                cuenta = "821794971"
-                img_banco = "popular.png" if os.path.exists("popular.png") else None
-
-            st.markdown(
-                f"""
-                <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
-                            padding: 18px; margin-top: 10px; margin-bottom: 10px;">
-                    <h4>🏦 {banco_pago}</h4>
-                    <p>Tipo: <strong>Ahorros</strong></p>
-                    <p>Titular: <strong>{titular}</strong></p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            st.caption("📋 Haz clic en el icono a la derecha del número para copiar:")
-            st.code(cuenta, language=None)
-
-            if img_banco and os.path.exists(img_banco):
-                st.image(img_banco, width=200)
-
-            total_pagar = st.session_state["cant_boletos"] * precio
-            st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:.2f}**")
-            st.info("Realiza el depósito y luego sube la foto del volante/comprobante.")
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button(
-                    "⬅️ VOLVER A DATOS Y COMBOS",
-                    key="volver_datos",
-                    use_container_width=True,
-                ):
-                    st.session_state["paso_compra"] = 1
-                    st.rerun()
-
-            with col2:
-                if st.button(
-                    "➡️ CONTINUAR Y SUBIR COMPROBANTE",
-                    key="continuar_comprobante",
-                    use_container_width=True,
-                ):
-                    st.session_state["paso_compra"] = 3
-                    st.rerun()
+    # Cargar rifas de la base de datos
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id, nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha FROM rifas")
+    rifas_list = c.fetchall()
+    
+    cols_rifa = st.columns(len(rifas_list))
+    
+    for idx, r in enumerate(rifas_list):
+        r_id, r_nombre, r_cat, r_precio, r_min, r_tot, r_img, r_fecha = r
+        
+        # Calcular el progreso
+        c.execute("SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado != 'disponible'", (r_id,))
+        vendidos = c.fetchone()[0]
+        progreso = round((vendidos / r_tot) * 100, 2)
+        
+        with cols_rifa[idx]:
+            if r_img and os.path.exists(r_img):
+                st.image(r_img, use_column_width=True)
+            st.subheader(r_nombre)
             st.write(f"📅 **Fecha:** {r_fecha}")
             st.write(f"📊 **PROGRESO: {progreso}%**")
             st.progress(progreso / 100)
-
             st.markdown(f"### **RD$ {r_precio:.2f}**")
             st.caption(f"Mínimo {r_min} boletos")
 
@@ -316,7 +278,7 @@ if seccion == "🏠 Inicio & Catálogo":
                 else f"📱 PARTICIPAR POR {r_nombre.upper()}"
             )
 
-            def seleccionar_rifa(rifa_id, nombre, precio, minimo):
+            def seleccionar_rifa(rifa_id=r_id, nombre=r_nombre, precio=r_precio, minimo=r_min):
                 st.session_state["rifa_seleccionada"] = rifa_id
                 st.session_state["nombre_rifa"] = nombre
                 st.session_state["precio_rifa"] = precio
@@ -328,9 +290,9 @@ if seccion == "🏠 Inicio & Catálogo":
                 label_btn,
                 key=f"btn_jugar_{r_id}",
                 on_click=seleccionar_rifa,
-                args=(r_id, r_nombre, r_precio, r_min),
                 use_container_width=True,
             )
+    conn.close()
 
     # ---------------------------------------------------------
     # FLUJO DE COMPRA PASO A PASO
@@ -360,7 +322,7 @@ if seccion == "🏠 Inicio & Catálogo":
         )
 
         # PASO 1: Datos del participante + Selección interactiva de combos
-   if paso == 1:
+        if paso == 1:
             st.subheader("📝 1. Completa tus datos y selecciona tu combo")
 
             if "cant_boletos" not in st.session_state:
@@ -426,7 +388,7 @@ if seccion == "🏠 Inicio & Catálogo":
                     use_container_width=True,
                 )
 
-   if continuar_datos:
+            if continuar_datos:
                 if not nombre_cliente.strip() or not telefono_cliente.strip():
                     st.error("Por favor completa tu nombre y teléfono/WhatsApp.")
                 else:
@@ -437,13 +399,13 @@ if seccion == "🏠 Inicio & Catálogo":
                     st.rerun()
 
         # PASO 2: Banco, imágenes y número de cuenta
-   elif paso == 2:
+        elif paso == 2:
             st.subheader("💳 2. Selecciona el banco para realizar el depósito")
 
             banco_pago = st.radio(
                 "¿Dónde deseas depositar?",
                 ["Banreservas", "Banco Popular"],
-               horizontal=True,
+                horizontal=True,
                 key="banco_pago",
             )
 
@@ -459,34 +421,35 @@ if seccion == "🏠 Inicio & Catálogo":
             st.markdown(
                 f"""
                 <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
-                            padding: 18px; margin-top: 10px;">
+                            padding: 18px; margin-top: 10px; margin-bottom: 10px;">
                     <h4>🏦 {banco_pago}</h4>
                     <p>Tipo: <strong>Ahorros</strong></p>
                     <p>Titular: <strong>{titular}</strong></p>
                     <p>Número de cuenta:</p>
-                    <div style="font-size: 1.6rem; font-weight: 800;
-                                letter-spacing: 2px;">{cuenta}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
+            # Opción 1: Muestra el código directo con el botón de copiar nativo de Streamlit
+            st.code(cuenta, language=None)
+
+            # Opción 2: Botón HTML personalizado de un solo clic que ejecuta JavaScript en la web
+            html_copiar = f"""
+            <button onclick="navigator.clipboard.writeText('{cuenta}').then(() => {{
+                this.innerText='✅ ¡CUENTA COPIADA!';
+                this.style.background='#28a745';
+                this.style.color='#fff';
+            }})" 
+            style="width:100%; padding:12px; border:0; border-radius:8px; 
+                   background:#F5C518; color:#000; font-weight:800; cursor:pointer; font-size: 1rem;">
+                📋 COPIAR NÚMERO DE CUENTA ({cuenta})
+            </button>
+            """
+            components.html(html_copiar, height=55)
+
             if img_banco and os.path.exists(img_banco):
                 st.image(img_banco, width=200)
-
-            st.markdown(
-                f"""
-                <button onclick="navigator.clipboard.writeText('{cuenta}').then(
-                    () => this.innerText='✅ CUENTA COPIADA'
-                )"
-                style="width:100%; padding:12px; margin-top:10px; border:0;
-                       border-radius:8px; background:#F5C518; color:#000;
-                       font-weight:800; cursor:pointer;">
-                    📋 COPIAR NÚMERO DE CUENTA
-                </button>
-                """,
-                unsafe_allow_html=True,
-            )
 
             total_pagar = st.session_state["cant_boletos"] * precio
             st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:.2f}**")
@@ -515,8 +478,9 @@ if seccion == "🏠 Inicio & Catálogo":
         elif paso == 3:
             st.subheader("📤 3. Sube el volante/comprobante del depósito")
 
+            banco_sel = st.session_state.get('banco_pago', 'Banco Seleccionado')
             st.info(
-                f"Banco seleccionado: **{st.session_state['banco_pago']}** · "
+                f"Banco seleccionado: **{banco_sel}** · "
                 f"Total a pagar: **RD$ {st.session_state['cant_boletos'] * precio:.2f}**"
             )
 
@@ -593,7 +557,7 @@ if seccion == "🏠 Inicio & Catálogo":
                                 (
                                     st.session_state["nombre_cliente"],
                                     st.session_state["telefono_cliente"],
-                                    st.session_state["banco_pago"],
+                                    st.session_state.get("banco_pago", "No especificado"),
                                     path_comp,
                                     ahora,
                                     b_id,
