@@ -635,18 +635,19 @@ elif seccion == "❓ Cómo jugar":
     """
     )
 
-                if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
-                    c.execute(
-                        """
-                        UPDATE boletos 
-                        SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, 
-                            metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
-                        WHERE id = ?
-                        """,
-                        (b_id,),
-                    )
-                    conn.commit()
-                    st.rerun()
-                st.markdown("---")
+        if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
+            c.execute(
+                """
+                UPDATE boletos
+                SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
+                    metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
+                WHERE id = ?
+                """,
+                (b_id,),
+            )
+            conn.commit()
+            st.rerun()
 
-        conn.close()
+        st.markdown("---")
+
+conn.close()
