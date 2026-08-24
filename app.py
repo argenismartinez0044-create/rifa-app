@@ -415,16 +415,13 @@ if seccion == "🏠 Inicio & Catálogo":
                     conn.commit()
                     conn.close()
 
-                st.success("🎉 ¡Boletos asignados temporalmente!")
-                st.info(
-                        "⏳ **Estado:** PENDIENTE DE CONFIRMACIÓN\n\n"
-                        "Tus números ya están apartados a tu nombre. Nuestro equipo validará el comprobante de pago en un plazo máximo de **24 horas** para cambiar su estado a **CONFIRMADO**."
-                    )
+               st.success("🎉 ¡Boletos asignados temporalmente!")
+st.info(...)
 
-                    st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
-                    cols_num = st.columns(min(len(num_asignados), 5))
-                    for i, n in enumerate(num_asignados):
-                        cols_num[i % 5].metric("Boleto", n, delta="Pendiente", delta_color="off")
+st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
+cols_num = st.columns(min(len(num_asignados), 5))
+for i, n in enumerate(num_asignados):
+    cols_num[i % 5].metric("Boleto", n, delta="Pendiente", delta_color="off")
 
 # ---------------------------------------------------------
 # SECCIÓN: VERIFICADOR
