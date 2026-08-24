@@ -140,6 +140,10 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# --- MENÚ LATERAL ---
+seccion = st.sidebar.radio("Navegación", ["🏠 Inicio & Catálogo", "🎟️ Mis Boletos", "🏆 Ganadores"])
+
 # ---------------------------------------------------------
 # 3. SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
 # ---------------------------------------------------------
