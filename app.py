@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-DB_FILE = "rifa_luxury.db"
+DB_FILE = "rifa_sirio.db"
 
 
 def init_db():
@@ -256,8 +256,45 @@ if seccion == "🏠 Inicio & Catálogo":
     # Formulario de compra si selecciona una rifa
     if "rifa_seleccionada" in st.session_state:
         st.markdown("---")
-        st.header(
-            f"🎯 Participando en: {st.session_state['nombre_rifa']}"
+      nombre = st.session_state['nombre_rifa']
+        precio = st.session_state['precio_rifa']
+        
+        st.markdown(
+            f"""
+            <div style="
+                background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+                border-radius: 16px;
+                padding: 25px 30px;
+                text-align: center;
+                box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.4);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 25px;
+            ">
+                <span style="
+                    background-color: #F5C518;
+                    color: #000;
+                    font-size: 0.85rem;
+                    font-weight: 800;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                ">Estás participando en</span>
+                <h1 style="
+                    color: #FFFFFF;
+                    font-size: 2.5rem;
+                    font-weight: 900;
+                    margin: 10px 0 5px 0;
+                    text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+                ">🎉 {nombre} 🎉</h1>
+                <p style="
+                    color: #E0E0E0;
+                    font-size: 1.2rem;
+                    margin: 0;
+                ">Precio por boleto: <strong style="color: #F5C518;">RD$ {precio:.2f}</strong></p>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
         st.subheader("💳 Métodos de Pago")
