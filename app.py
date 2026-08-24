@@ -32,76 +32,51 @@ def init_db():
             precio_boleto REAL,
             min_boletos INTEGER,
             total_boletos INTEGER,
-            imagen_path TEXT,
-            fecha_sorteo TEXT
+            imagen TEXT,
+            fecha TEXT
         )
-    """
-    )
-
-    # Tabla de Boletos
-    c.execute(
         """
-        CREATE TABLE IF NOT EXISTS boletos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rifa_id INTEGER,
-            numero TEXT,
-            estado TEXT DEFAULT 'disponible',
-            nombre_cliente TEXT,
-            telefono TEXT,
-            metodo_pago TEXT,
-            comprobante_path TEXT,
-            fecha_reserva TIMESTAMP,
-            FOREIGN KEY (rifa_id) REFERENCES rifas (id)
-        )
-    """
     )
 
-    # Insertar Rifa inicial si no existe ninguna
+    # Insertar rifas por defecto si la tabla está vacía
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
         c.execute(
             """
-            INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen_path, fecha_sorteo)
+            INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
+            """,
             (
-                "Play Play station 5 pro",
+                "PlayStation 5 Pro",
                 "Juego",
                 5.0,
-                15,
-                10000,
+                10,
+                100000,
                 "play.jpg",
                 "Fecha pendiente de asignar",
             ),
         )
-
         c.execute(
             """
-            INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen_path, fecha_sorteo)
+            INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
+            """,
             (
                 "5 iPhone 17 Pro Max",
                 "TELÉFONO",
                 15.0,
-                10,
-                10000,
+                5,
+                100000,
                 "iphone.jpg",
                 "Se coloca con el 80% vendido",
             ),
         )
 
-        conn.commit()
+    # FORZAR ACTUALIZACIÓN para bases de datos existentes en Streamlit Cloud
+    c.execute("UPDATE rifas SET imagen = 'play.jpg', total_boletos = 100000 WHERE id = 1 OR nombre LIKE '%Play%'")
+    c.execute("UPDATE rifas SET imagen = 'iphone.jpg', total_boletos = 100000 WHERE id = 2 OR nombre LIKE '%iPhone%'")
 
-        # Generar boletos para las rifas iniciales
-        for rifa_id in [1, 2]:
-            numeros = [f"{i:05d}" for i in range(1, 1001)]
-            c.executemany(
-                "INSERT INTO boletos (rifa_id, numero) VALUES (?, ?)",
-                [(rifa_id, n) for n in numeros],
-            )
-        conn.commit()
-
+    conn.commit()
     conn.close()
 
 
