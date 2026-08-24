@@ -444,7 +444,27 @@ elif seccion == "🔎 Verificador de boletos":
             mis_boletos = c.fetchall()
             conn.close()
 
-      if mis_boletos:
+      elif seccion == "🔎 Verificador de boletos":
+    st.header("🔎 Verificador de Boletos")
+    tel_buscar = st.text_input("Ingresa tu número de teléfono para consultar tus números:")
+    
+    if st.button("Buscar mis boletos"):
+        if tel_buscar:
+            conn = sqlite3.connect(DB_FILE)
+            c = conn.cursor()
+            c.execute(
+                """
+                SELECT b.numero, b.estado, r.nombre 
+                FROM boletos b 
+                JOIN rifas r ON b.rifa_id = r.id 
+                WHERE b.usuario_telefono = ?
+                """, 
+                (tel_buscar,)
+            )
+            mis_boletos = c.fetchall()
+            conn.close()
+            
+            if mis_boletos:
                 st.success(f"Se encontraron {len(mis_boletos)} boletos asociados a tu número:")
                 for num, est, rifa_nom in mis_boletos:
                     c1, c2, c3 = st.columns(3)
@@ -460,68 +480,6 @@ elif seccion == "🔎 Verificador de boletos":
                         
                     st.markdown("---")
             else:
-                st.info("No se encontraron registros con este número.")
-
-# ---------------------------------------------------------
-# OTRAS SECCIONES
-# ---------------------------------------------------------
-elif seccion == "❓ Cómo jugar":
-    st.header("❓ Cómo Participar")
-    st.markdown(
-        "1. Selecciona tu premio.\n2. Compra tus boletos.\n3. Transfiere por banco.\n4. Sube la foto del comprobante.\n5. Verifica tus números."
-    )
-
-elif seccion == "🤖 Soporte IA":
-    abrir_soporte_ia()
-
-elif seccion == "🏆 Ganadores":
-    st.header("🏆 Ganadores Anteriores")
-    st.info("Próximamente publicaremos aquí los ganadores oficiales.")
-
-elif seccion == "⚙️ Administración":
-    st.header("⚙️ Administración")
-    pass_admin = st.text_input("Contraseña", type="password")
-
-    if pass_admin == "admin123":
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute(
-            """
-            SELECT b.id, b.numero, b.usuario_nombre, b.usuario_telefono, b.metodo_pago, b.comprobante, b.fecha_reserva, r.nombre
-            FROM boletos b JOIN rifas r ON b.rifa_id = r.id
-            WHERE b.estado = 'reservado'
-            """
-        )
-        pendientes = c.fetchall()
-
-        if not pendientes:
-            st.info("No hay pagos pendientes por confirmar.")
+                st.warning("No se encontraron boletos registrados con este número de teléfono.")
         else:
-            for boleto in pendientes:
-                b_id, num, nombre, tel, pago, comp, fecha, rifa_nom = boleto
-                st.markdown(f"#### 🎟️ Boleto `{num}` — {rifa_nom}")
-                st.write(f"👤 {nombre} | 📱 {tel} | 💳 {pago}")
-
-                if comp and os.path.exists(comp):
-                    st.image(comp, width=250)
-
-                c1, c2 = st.columns(2)
-                if c1.button(f"Aceptar {num}", key=f"acc_{b_id}"):
-                    c.execute(
-                        "UPDATE boletos SET estado = 'confirmado' WHERE id = ?",
-                        (b_id,),
-                    )
-                    conn.commit()
-                    st.rerun()
-
-                if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
-                    c.execute(
-                        "UPDATE boletos SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL WHERE id = ?",
-                        (b_id,),
-                    )
-                    conn.commit()
-                    st.rerun()
-                st.markdown("---")
-        conn.close()
-    elif pass_admin != "":
-        st.error("Contraseña incorrecta.")
+            st.error("Por favor ingresa un número de teléfono válido.")
