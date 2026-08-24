@@ -77,16 +77,34 @@ if opcion == "Comprar Boletos":
     st.header("💳 Métodos de Pago")
     st.info(
         """
-    - **Transferencia Bancaria:** Banco ABC - Cuenta: 123-456789-0
-    - **Pago Móvil / Wallet:** +1 800 555 0199
-    - **Efectivo / Agente:** Solicitar datos por WhatsApp
-    """
-    )
+   st.markdown("---")
+st.header("💳 Métodos de Pago")
+st.caption("Selecciona tu banco para ver las credenciales de transferencia:")
 
-    st.markdown("---")
-    st.header("📝 Formulario de Registro")
+# Pestañas para Banreservas y Banco Popular
+tab_banres, tab_pop = st.tabs(["Banreservas", "Banco Popular"])
 
-    with st.form("registro_rifa"):
+with tab_banres:
+    st.markdown("### 🔴 Banreservas")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Tipo de Cuenta:** Ahorros")
+        st.write("**Titular:** ARGENIS MARTINEZ ")
+    with col2:
+        st.write("**Número de Cuenta:** (Toca para copiar)")
+        st.code("9606561652", language="text")  
+        st.write("**Cédula / RNC:** 402-0062237-7")
+
+with tab_pop:
+    st.markdown("### 🔵 Banco Popular")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Tipo de Cuenta:** Ahorros")
+        st.write("**Titular:** ARGENIS MARTINEZ")
+    with col2:
+        st.write("**Número de Cuenta:** (Toca para copiar)")
+        st.code("821794971", language="text") 
+        st.write("**Cédula / RNC:** 402-0062237-7")
         nombre = st.text_input("Nombre completo")
         telefono = st.text_input("Número de Teléfono / WhatsApp")
         cantidad = st.number_input(
