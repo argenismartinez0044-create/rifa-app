@@ -1,17 +1,18 @@
-import sqlite3
 import datetime
 import os
 import random
+import sqlite3
 from PIL import Image
 import streamlit as st
 
 DB_FILE = "rifas_v4.db"
 WHATSAPP_NUMERO = "8294835217"  # ⚠️ Coloca tu número de WhatsApp real
 
+
 # ---------------------------------------------------------
 # DIÁLOGO EMERGENTE GLOBAL: CHAT SOPORTE IA
 # ---------------------------------------------------------
-@st.dialog("🤖 Asistente Virtual - Rifas Luxury")
+@st.dialog("🤖 Asistente Virtual - Rifas Sirio ")
 def abrir_soporte_ia():
     st.caption(
         "Respuestas instantáneas las 24 horas. Si tu duda requiere atención manual, te transferiremos a un asesor."
@@ -22,9 +23,9 @@ def abrir_soporte_ia():
             {
                 "role": "assistant",
                 "content": (
-                    "¡Hola! Soy tu asistente de **Rifas Luxury**. 🎲\n\n"
+                    "¡Hola! Soy tu asistente de **Rifas Sirio RD**. 🎲\n\n"
                     "Puedo ayudarte con:\n"
-                    "• **¿Cómo jugar y participar?**\n"
+                    "• **¿Cómo participar en los sorteos?**\n"
                     "• **Cuentas de banco y pagos**\n"
                     "• **Consultar tus boletos comprados**\n"
                     "• **Fechas de los sorteos**\n\n"
@@ -38,8 +39,8 @@ def abrir_soporte_ia():
     c1, c2, c3, c4 = st.columns(4)
 
     opcion_rapida = None
-    if c1.button("🎲 ¿Cómo jugar?", key="dlg_c1"):
-        opcion_rapida = "¿Cómo jugar?"
+    if c1.button("🎲 ¿Cómo participar?", key="dlg_c1"):
+        opcion_rapida = "¿Cómo participar?"
     if c2.button("💳 Cuentas bancarias", key="dlg_c2"):
         opcion_rapida = "cuentas de banco"
     if c3.button("🔎 Mis boletos", key="dlg_c3"):
@@ -151,7 +152,7 @@ def abrir_soporte_ia():
             respuesta = (
                 "**Precios por boleto:**\n\n"
                 "• **PlayStation 5 Pro:** RD$ 5.00 por boleto.\n"
-                "• **5 iPhone 17 Pro Max:** RD$ 15.00 por boleto.\n\n"
+                "• **Sorteo 5 iPhone 17 Pro Max:** RD$ 15.00 por boleto.\n\n"
                 "📌 La compra mínima es de **10 boletos** por orden."
             )
         elif any(
@@ -180,15 +181,25 @@ def abrir_soporte_ia():
             mostrar_whatsapp = True
         else:
             respuesta = (
-                "No entendí bien tu consulta. ¿Deseas saber cómo jugar, consultar datos bancarios, verificar boletos o hablar con un representante?"
+                "No entendí bien tu consulta. ¿Deseas saber cómo participar, consultar datos bancarios, verificar boletos o hablar con un representante?"
             )
             mostrar_whatsapp = True
 
         st.session_state["mensajes_chat"].append(
             {"role": "assistant", "content": respuesta}
         )
+
+        if mostrar_whatsapp:
+            st.markdown(
+                f"[💬 Hablar con un asesor en WhatsApp](https://wa.me/{WHATSAPP_NUMERO})"
+            )
+
         st.rerun()
 
+
+# ---------------------------------------------------------
+# INICIALIZACIÓN DE LA BASE DE DATOS
+# ---------------------------------------------------------
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -235,10 +246,10 @@ def init_db():
                 "PlayStation 5 Pro",
                 "Juego",
                 5.0,
-                10,
+                15,
                 100000,
                 "play.jpg",
-                "Fecha pendiente de asignar",
+                "El sorteo se realiza una vez se complete el 100%",
             ),
         )
         c.execute(
@@ -253,7 +264,7 @@ def init_db():
                 10,
                 100000,
                 "iphone.jpg",
-                "Se coloca con el 80% vendido",
+                "Cada 20% se sacara un ganador",
             ),
         )
 
@@ -266,8 +277,11 @@ def init_db():
 
         conn.commit()
 
-    # FORZADO DE ACTUALIZACIÓN: Asegura el mínimo de 10 boletos siempre
+    # Forzado de actualización de la base de datos
     c.execute("UPDATE rifas SET min_boletos = 10 WHERE id = 2")
+    c.execute(
+        "UPDATE rifas SET nombre = '5 iPhone 17 Pro Max' WHERE id = 2"
+    )
     conn.commit()
     conn.close()
 
@@ -280,7 +294,7 @@ def liberar_expirados():
         """
         UPDATE boletos 
         SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
-        WHERE estado = 'apartado' AND fecha_reserva < ?
+        WHERE estado = 'reservado' AND fecha_reserva < ?
         """,
         (hace_15_min,),
     )
@@ -318,6 +332,11 @@ seccion = st.sidebar.radio(
     ],
 )
 
+# Acceso rápido al Chat IA desde el menú lateral
+st.sidebar.markdown("---")
+if st.sidebar.button("💬 Abrir Asistente IA"):
+    abrir_soporte_ia()
+
 # ---------------------------------------------------------
 # SECCIÓN: INICIO Y CATÁLOGO DE RIFAS
 # ---------------------------------------------------------
@@ -341,7 +360,7 @@ if seccion == "🏠 Inicio & Catálogo":
     st.markdown("---")
 
     with st.expander(
-        "📺 **¿CÓMO JUGAR?** — 5 pasos simples para participar y ganar"
+        "📺 **¿CÓMO PARTICIPAR?** — 5 pasos simples para participar y ganar"
     ):
         st.write("1. Selecciona la rifa en la que deseas participar del catálogo.")
         st.write(
@@ -413,9 +432,13 @@ if seccion == "🏠 Inicio & Catálogo":
             st.markdown(f"### **RD$ {r_precio:.2f}**")
             st.caption(f"Mínimo {r_min} boletos")
 
-            if st.button(
-                f"🎮 JUGAR EN {r_nombre.upper()}", key=f"btn_jugar_{r_id}"
-            ):
+            # Botones de acción dinámicos según el premio
+            if "PlayStation" in r_nombre:
+                label_btn = f"🎮 JUGAR POR {r_nombre.upper()}"
+            else:
+                label_btn = f"📱 PARTICIPAR POR {r_nombre.upper()}"
+
+            if st.button(label_btn, key=f"btn_jugar_{r_id}"):
                 st.session_state["rifa_seleccionada"] = r_id
                 st.session_state["nombre_rifa"] = r_nombre
                 st.session_state["precio_rifa"] = r_precio
@@ -447,7 +470,7 @@ if seccion == "🏠 Inicio & Catálogo":
                     border-radius: 20px;
                     text-transform: uppercase;
                     letter-spacing: 1px;
-                ">Estás participando en</span>
+                ">Estás participando por</span>
                 <h1 style="
                     color: #FFFFFF;
                     font-size: 2.5rem;
@@ -530,49 +553,51 @@ if seccion == "🏠 Inicio & Catálogo":
                 )
                 disp = c.fetchall()
 
-        if len(disp) < cant_boletos:
-            st.error("No hay suficientes boletos disponibles.")
-        else:
-            asignados = random.sample(disp, cant_boletos)
+                if len(disp) < cant_boletos:
+                    st.error("No hay suficientes boletos disponibles.")
+                    conn.close()
+                else:
+                    asignados = random.sample(disp, cant_boletos)
 
-            os.makedirs("comprobantes", exist_ok=True)
-            path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.png"
-            img = Image.open(comprobante_file)
-            img.save(path_comp)
+                    os.makedirs("comprobantes", exist_ok=True)
+                    path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.png"
+                    img = Image.open(comprobante_file)
+                    img.save(path_comp)
 
-            ahora = datetime.datetime.now()
-            num_asignados = []
+                    ahora = datetime.datetime.now()
+                    num_asignados = []
 
-            for b_id, b_num in asignados:
-                num_asignados.append(b_num)
-                c.execute(
-                    """
-                    UPDATE boletos
-                    SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?,
-                        metodo_pago = ?, comprobante = ?, fecha_reserva = ?
-                    WHERE id = ?
-                    """,
-                    (
-                        nombre_cliente,
-                        telefono_cliente,
-                        banco_pago,
-                        path_comp,
-                        ahora,
-                        b_id,
-                    ),
-                )
+                    for b_id, b_num in asignados:
+                        num_asignados.append(b_num)
+                        c.execute(
+                            """
+                            UPDATE boletos
+                            SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?,
+                                metodo_pago = ?, comprobante = ?, fecha_reserva = ?
+                            WHERE id = ?
+                            """,
+                            (
+                                nombre_cliente,
+                                telefono_cliente,
+                                banco_pago,
+                                path_comp,
+                                ahora,
+                                b_id,
+                            ),
+                        )
 
-            conn.commit()
+                    conn.commit()
+                    conn.close()
 
-            st.success("🎉 ¡Boletos asignados exitosamente!")
-            st.warning(
-               "⚠️ Tus números están reservados. Serán confirmados tras la verificación de tu transferencia."
+                    st.success("🎉 ¡Boletos asignados exitosamente!")
+                    st.warning(
+                        "⚠️ Tus números están reservados. Serán confirmados tras la verificación de tu transferencia."
                     )
 
-            st.subheader("🎟️ Tus Números Asignados:")
-            cols_num = st.columns(min(len(num_asignados), 5))
-            for i, n in enumerate(num_asignados):
-              cols_num[i % 5].metric("Boleto", n)
+                    st.subheader("🎟️ Tus Números Asignados:")
+                    cols_num = st.columns(min(len(num_asignados), 5))
+                    for i, n in enumerate(num_asignados):
+                        cols_num[i % 5].metric("Boleto", n)
 
 # ---------------------------------------------------------
 # SECCIÓN: VERIFICADOR DE BOLETOS
@@ -623,10 +648,10 @@ elif seccion == "🔎 Verificador de boletos":
 # SECCIÓN: CÓMO JUGAR
 # ---------------------------------------------------------
 elif seccion == "❓ Cómo jugar":
-    st.header("❓ Cómo Jugar en Rifas Luxury RD")
+    st.header("❓ Cómo Participar en Rifas Luxury RD")
     st.markdown(
         """
-    1. **Explora el catálogo:** Elige tu premio preferido (autos, celulares, dinero).
+    1. **Explora el catálogo:** Elige tu premio preferido (autos, celulares, consolas, dinero).
     2. **Selecciona tus números:** Elige la cantidad de boletos que deseas comprar.
     3. **Haz tu pago:** Realiza la transferencia a nuestras cuentas de **Banreservas** o **Banco Popular**.
     4. **Sube tu comprobante:** Adjunta la imagen de tu transferencia en el formulario.
@@ -634,20 +659,84 @@ elif seccion == "❓ Cómo jugar":
     """
     )
 
-     # Debe estar alineado con la columna 1 (c1) o el bucle anterior
-if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
-    c.execute(
+# ---------------------------------------------------------
+# SECCIÓN: SOPORTE IA
+# ---------------------------------------------------------
+elif seccion == "🤖 Soporte IA":
+    abrir_soporte_ia()
+
+# ---------------------------------------------------------
+# SECCIÓN: GANADORES
+# ---------------------------------------------------------
+elif seccion == "🏆 Ganadores":
+    st.header("🏆 Ganadores Anteriores")
+    st.write("¡Felicitaciones a nuestros ganadores de ediciones pasadas!")
+    st.info("Próximamente publicaremos aquí la lista de entregas confirmadas.")
+
+# ---------------------------------------------------------
+# SECCIÓN: ADMINISTRACIÓN
+# ---------------------------------------------------------
+elif seccion == "⚙️ Administración":
+    st.header("⚙️ Panel de Administración - Validar Boletos")
+
+    pass_admin = st.text_input("Contraseña Administrador", type="password")
+
+    if pass_admin == "admin123":  # Cambia esta clave según prefieras
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+
+        c.execute(
             """
-            UPDATE boletos
-            SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
-                 metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
-            WHERE id = ?
-            """,
-            (b_id,),
-    )  
-    conn.commit()
-    st.rerun()
+            SELECT b.id, b.numero, b.usuario_nombre, b.usuario_telefono, b.metodo_pago, b.comprobante, b.fecha_reserva, r.nombre
+            FROM boletos b
+            JOIN rifas r ON b.rifa_id = r.id
+            WHERE b.estado = 'reservado'
+            """
+        )
+        pendientes = c.fetchall()
 
-st.markdown("---")
+        if not pendientes:
+            st.info("No hay reservas pendientes por confirmar.")
+        else:
+            st.write(f"Hay **{len(pendientes)}** reservas pendientes de verificación:")
 
-conn.close()
+            for boleto in pendientes:
+                b_id, num, nombre, tel, pago, comp, fecha, rifa_nom = boleto
+
+                st.markdown(f"#### 🎟️ Boleto `{num}` — {rifa_nom}")
+                st.write(f"👤 **Cliente:** {nombre} | 📱 **Teléfono:** {tel}")
+                st.write(f"💳 **Banco:** {pago} | 📅 **Fecha:** {fecha}")
+
+                if comp and os.path.exists(comp):
+                    st.image(comp, width=300)
+
+                c1, c2 = st.columns(2)
+
+                if c1.button(f"Aceptar {num}", key=f"acc_{b_id}"):
+                    c.execute(
+                        "UPDATE boletos SET estado = 'confirmado' WHERE id = ?",
+                        (b_id,),
+                    )
+                    conn.commit()
+                    st.success(f"Boleto {num} confirmado correctamente.")
+                    st.rerun()
+
+                if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
+                    c.execute(
+                        """
+                        UPDATE boletos
+                        SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
+                            metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
+                        WHERE id = ?
+                        """,
+                        (b_id,),
+                    )
+                    conn.commit()
+                    st.warning(f"Boleto {num} liberado nuevamente.")
+                    st.rerun()
+
+                st.markdown("---")
+
+        conn.close()
+    elif pass_admin != "":
+        st.error("Contraseña incorrecta.")
