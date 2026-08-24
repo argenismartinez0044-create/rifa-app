@@ -412,16 +412,16 @@ if seccion == "🏠 Inicio & Catálogo":
                                 b_id,
                             ),
                         )
-       conn.commit()
-       conn.close()
+                    conn.commit()
+                    conn.close()
 
-       st.success("🎉 ¡Boletos asignados temporalmente!")
-       st.info(...)
+                    st.success("🎉 ¡Boletos asignados temporalmente!")
+                    st.info("Tus boletos quedan reservados temporalmente mientras se valida el comprobante.")
 
-st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
-cols_num = st.columns(min(len(num_asignados), 5))
-for i, n in enumerate(num_asignados):
-    cols_num[i % 5].metric("Boleto", n, delta="Pendiente", delta_color="off")
+                    st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
+                    cols_num = st.columns(min(len(num_asignados), 5))
+                    for i, n in enumerate(num_asignados):
+                        cols_num[i % 5].metric("Boleto", n, delta="Pendiente", delta_color="off")
 
 # ---------------------------------------------------------
 # SECCIÓN: VERIFICADOR
@@ -441,7 +441,7 @@ elif seccion == "🔎 Verificador de boletos":
             mis_boletos = c.fetchall()
             conn.close()
 
-           if mis_boletos:
+            if mis_boletos:
                 st.success(f"Se encontraron {len(mis_boletos)} boletos asociados a tu número:")
                 for num, est, rifa_nom in mis_boletos:
                     c1, c2, c3 = st.columns(3)
