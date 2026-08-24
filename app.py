@@ -530,7 +530,7 @@ if seccion == "🏠 Inicio & Catálogo":
                 )
                 disp = c.fetchall()
 
-           if len(disp) < cant_boletos:
+        if len(disp) < cant_boletos:
             st.error("No hay suficientes boletos disponibles.")
         else:
             asignados = random.sample(disp, cant_boletos)
