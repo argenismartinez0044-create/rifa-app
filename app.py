@@ -530,7 +530,7 @@ if seccion == "🏠 Inicio & Catálogo":
                 )
                 disp = c.fetchall()
 
-                if len(disp) < cant_boletos:
+            if len(disp) < cant_boletos:
                     st.error("No hay suficientes boletos disponibles.")
                 else:
                     asignados = random.sample(disp, cant_boletos)
@@ -636,15 +636,15 @@ elif seccion == "❓ Cómo jugar":
     )
 
      # Debe estar alineado con la columna 1 (c1) o el bucle anterior
-     if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
+  if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
         c.execute(
-                """
-                UPDATE boletos
-                SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
-                    metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
-                WHERE id = ?
-                """,
-                (b_id,),
+            """
+            UPDATE boletos
+            SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
+                 metodo_pago = NULL, comprobante = NULL, fecha_reserva = NULL
+            WHERE id = ?
+            """,
+            (b_id,),
             )
             conn.commit()
             st.rerun()
