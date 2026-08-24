@@ -242,6 +242,7 @@ if seccion == "🏠 Inicio & Catálogo":
         )
     st.markdown(
             "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios Exclusivos Garantizados</h1>",
+       )
            # PASO 2: Banco, imágenes y número de cuenta
         elif paso == 2:
             st.subheader("💳 2. Selecciona el banco para realizar el depósito")
