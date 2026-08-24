@@ -313,115 +313,314 @@ if seccion == "🏠 Inicio & Catálogo":
                 else f"📱 PARTICIPAR POR {r_nombre.upper()}"
             )
 
-            if st.button(label_btn, key=f"btn_jugar_{r_id}"):
-                st.session_state["rifa_seleccionada"] = r_id
-                st.session_state["nombre_rifa"] = r_nombre
-                st.session_state["precio_rifa"] = r_precio
-                st.session_state["min_rifa"] = r_min
+            # Cada botón selecciona la rifa y reinicia el flujo de compra.
+            # Se usa on_click para que la selección quede guardada antes
+            # de volver a dibujar la página.
+            def seleccionar_rifa(rifa_id, nombre, precio, minimo):
+                st.session_state["rifa_seleccionada"] = rifa_id
+                st.session_state["nombre_rifa"] = nombre
+                st.session_state["precio_rifa"] = precio
+                st.session_state["min_rifa"] = minimo
+                st.session_state["paso_compra"] = 1
 
+            st.button(
+                label_btn,
+                key=f"btn_jugar_{r_id}",
+                on_click=seleccionar_rifa,
+                args=(r_id, r_nombre, r_precio, r_min),
+                use_container_width=True,
+            )
+
+    # ---------------------------------------------------------
+    # FLUJO DE COMPRA: SOLO APARECE DESPUÉS DE ELEGIR UNA RIFA
+    # ---------------------------------------------------------
     if "rifa_seleccionada" in st.session_state:
         st.markdown("---")
+
         nombre = st.session_state["nombre_rifa"]
         precio = st.session_state["precio_rifa"]
+        minimo = st.session_state["min_rifa"]
+        paso = st.session_state.get("paso_compra", 1)
 
         st.markdown(
             f"""
-            <div style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); border-radius: 16px; padding: 20px; text-align: center;">
-                <span style="background-color: #F5C518; color: #000; font-weight: 800; padding: 4px 12px; border-radius: 20px;">Participando por</span>
+            <div style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+                        border-radius: 16px; padding: 20px; text-align: center;">
+                <span style="background-color: #F5C518; color: #000; font-weight: 800;
+                             padding: 4px 12px; border-radius: 20px;">Rifa seleccionada</span>
                 <h2 style="color: #FFFFFF; margin: 10px 0;">🎉 {nombre} 🎉</h2>
-                <p style="color: #E0E0E0; margin: 0;">Precio por boleto: <strong style="color: #F5C518;">RD$ {precio:.2f}</strong></p>
+                <p style="color: #E0E0E0; margin: 0;">
+                    Precio por boleto:
+                    <strong style="color: #F5C518;">RD$ {precio:.2f}</strong>
+                </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.subheader("💳 Cuentas Bancarias para Transferir")
-        tab_banres, tab_pop = st.tabs(["Banreservas", "Banco Popular"])
-        with tab_banres:
-            st.write("**Banreservas (Ahorros):** ARGENIS MARTINEZ C.")
-            st.code("9606561652", language="text")
-        with tab_pop:
-            st.write("**Banco Popular (Ahorros):** ARGENIS MARTINEZ")
-            st.code("821794971", language="text")
+        # PASO 1: primero se solicitan los datos del participante.
+        if paso == 1:
+            st.subheader("📝 1. Completa tus datos")
 
-        st.markdown("---")
-        st.subheader("📝 Registrar Boletos")
-
-        with st.form("form_compra"):
-            nombre_cliente = st.text_input("Nombre Completo")
-            telefono_cliente = st.text_input(
-                "Teléfono / WhatsApp (Ej: 8091234567)"
-            )
-            cant_boletos = st.number_input(
-                "Cantidad de boletos",
-                min_value=int(st.session_state["min_rifa"]),
-                max_value=100,
-                value=int(st.session_state["min_rifa"]),
-            )
-            banco_pago = st.selectbox(
-                "Banco donde transferiste", ["Banreservas", "Banco Popular"]
-            )
-            comprobante_file = st.file_uploader(
-                "Subir foto del comprobante", type=["png", "jpg", "jpeg"]
-            )
-
-            total_pagar = cant_boletos * st.session_state["precio_rifa"]
-            st.markdown(f"### Total a pagar: **RD$ {total_pagar:.2f}**")
-
-            btn_confirmar = st.form_submit_button("✅ RESERVAR MIS BOLETOS")
-
-        if btn_confirmar:
-            if not nombre_cliente or not telefono_cliente or not comprobante_file:
-                st.error("Por favor completa todos los campos.")
-            else:
-                conn = sqlite3.connect(DB_FILE)
-                c = conn.cursor()
-                c.execute(
-                    "SELECT id, numero FROM boletos WHERE rifa_id = ? AND estado = 'disponible'",
-                    (st.session_state["rifa_seleccionada"],),
+            with st.form("form_datos_cliente", clear_on_submit=False):
+                nombre_cliente = st.text_input(
+                    "Nombre Completo",
+                    value=st.session_state.get("nombre_cliente", ""),
                 )
-                disp = c.fetchall()
+                telefono_cliente = st.text_input(
+                    "Teléfono / WhatsApp (Ej: 8091234567)",
+                    value=st.session_state.get("telefono_cliente", ""),
+                )
+                # Selección rápida por niveles + cantidad personalizada.
+                minimo_rifa = int(minimo)
+                precio_boleto = float(precio)
 
-                if len(disp) < cant_boletos:
-                    st.error("No hay suficientes boletos disponibles.")
-                    conn.close()
+                st.markdown("### 🎟️ Elige tu cantidad de boletos")
+                st.caption(
+                    f"Cantidad mínima: {minimo_rifa} boletos. "
+                    "Toca un nivel para seleccionarlo automáticamente."
+                )
+
+                niveles = [
+                    ("🟢 NORMAL", minimo_rifa),
+                    ("🔵 DOBLE", minimo_rifa * 2),
+                    ("🟣 INTERMEDIO", minimo_rifa * 3),
+                    ("🟠 PROFESIONAL", minimo_rifa * 5),
+                    ("🔴 PRO", minimo_rifa * 10),
+                ]
+
+                # Streamlit no permite botones dentro de un st.form,
+                # por eso los niveles se colocan antes del formulario.
+                # La selección queda guardada en session_state.
+                nivel_cols = st.columns(len(niveles))
+                for i, (nombre_nivel, cantidad_nivel) in enumerate(niveles):
+                    cantidad_nivel = min(100, cantidad_nivel)
+                    if nivel_cols[i].button(
+                        f"{nombre_nivel} · {cantidad_nivel}",
+                        key=f"nivel_{st.session_state['rifa_seleccionada']}_{i}",
+                        use_container_width=True,
+                    ):
+                        st.session_state["cant_boletos"] = cantidad_nivel
+                        st.session_state["nivel_boletos"] = nombre_nivel
+                        st.rerun()
+
+                cantidad_guardada = int(
+                    st.session_state.get("cant_boletos", minimo_rifa)
+                )
+
+                cant_boletos = st.number_input(
+                    "✏️ O escribe la cantidad manualmente",
+                    min_value=minimo_rifa,
+                    max_value=100,
+                    value=max(minimo_rifa, min(100, cantidad_guardada)),
+                    step=1,
+                    key=f"cant_manual_{st.session_state['rifa_seleccionada']}",
+                )
+
+                # Mostrar siempre el cálculo actualizado.
+                total_pagar = int(cant_boletos) * precio_boleto
+                st.markdown(
+                    f"### 💰 {int(cant_boletos)} boletos × RD$ {precio_boleto:.2f} "
+                    f"= **RD$ {total_pagar:.2f}**"
+                )
+
+
+                continuar_datos = st.form_submit_button(
+                    "➡️ CONTINUAR AL PAGO",
+                    use_container_width=True,
+                )
+
+            if continuar_datos:
+                if not nombre_cliente.strip() or not telefono_cliente.strip():
+                    st.error("Por favor completa tu nombre y teléfono/WhatsApp.")
                 else:
-                    asignados = random.sample(disp, cant_boletos)
-                    os.makedirs("comprobantes", exist_ok=True)
-                    path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.png"
-                    Image.open(comprobante_file).save(path_comp)
+                    st.session_state["nombre_cliente"] = nombre_cliente.strip()
+                    st.session_state["telefono_cliente"] = telefono_cliente.strip()
+                    st.session_state["cant_boletos"] = int(cant_boletos)
+                    st.session_state["paso_compra"] = 2
+                    st.rerun()
 
-                    ahora = datetime.datetime.now()
-                    num_asignados = []
+        # PASO 2: después de los datos se muestra el banco y la cuenta.
+        elif paso == 2:
+            st.subheader("💳 2. Selecciona el banco para realizar el depósito")
 
-                    for b_id, b_num in asignados:
-                        num_asignados.append(b_num)
-                        c.execute(
-                            """
-                            UPDATE boletos
-                            SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?,
-                                metodo_pago = ?, comprobante = ?, fecha_reserva = ?
-                            WHERE id = ?
-                            """,
-                            (
-                                nombre_cliente,
-                                telefono_cliente,
-                                banco_pago,
-                                path_comp,
-                                ahora,
-                                b_id,
-                            ),
+            banco_pago = st.radio(
+                "¿Dónde deseas depositar?",
+                ["Banreservas", "Banco Popular"],
+                horizontal=True,
+                key="banco_pago",
+            )
+
+            if banco_pago == "Banreservas":
+                titular = "ARGENIS MARTINEZ C."
+                cuenta = "9606561652"
+            else:
+                titular = "ARGENIS MARTINEZ"
+                cuenta = "821794971"
+
+            st.markdown(
+                f"""
+                <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
+                            padding: 18px; margin-top: 10px;">
+                    <h4>🏦 {banco_pago}</h4>
+                    <p>Tipo: <strong>Ahorros</strong></p>
+                    <p>Titular: <strong>{titular}</strong></p>
+                    <p>Número de cuenta:</p>
+                    <div style="font-size: 1.6rem; font-weight: 800;
+                                letter-spacing: 2px;">{cuenta}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Botón de copiar independiente de Streamlit para que funcione
+            # directamente desde el navegador.
+            st.markdown(
+                f"""
+                <button onclick="navigator.clipboard.writeText('{cuenta}').then(
+                    () => this.innerText='✅ CUENTA COPIADA'
+                )"
+                style="width:100%; padding:12px; margin-top:10px; border:0;
+                       border-radius:8px; background:#F5C518; color:#000;
+                       font-weight:800; cursor:pointer;">
+                    📋 COPIAR NÚMERO DE CUENTA
+                </button>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            total_pagar = st.session_state["cant_boletos"] * precio
+            st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:.2f}**")
+            st.info("Realiza el depósito y luego sube la foto del volante/comprobante.")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(
+                    "⬅️ VOLVER A MIS DATOS",
+                    key="volver_datos",
+                    use_container_width=True,
+                ):
+                    st.session_state["paso_compra"] = 1
+                    st.rerun()
+
+            with col2:
+                if st.button(
+                    "➡️ CONTINUAR Y SUBIR COMPROBANTE",
+                    key="continuar_comprobante",
+                    use_container_width=True,
+                ):
+                    st.session_state["paso_compra"] = 3
+                    st.rerun()
+
+        # PASO 3: solamente después de elegir banco aparece el cargador.
+        elif paso == 3:
+            st.subheader("📤 3. Sube el volante/comprobante del depósito")
+
+            st.info(
+                f"Banco seleccionado: **{st.session_state['banco_pago']}** · "
+                f"Total a pagar: **RD$ {st.session_state['cant_boletos'] * precio:.2f}**"
+            )
+
+            comprobante_file = st.file_uploader(
+                "Selecciona la imagen del volante/comprobante",
+                type=["png", "jpg", "jpeg"],
+                key="comprobante_file",
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(
+                    "⬅️ VOLVER AL BANCO",
+                    key="volver_banco",
+                    use_container_width=True,
+                ):
+                    st.session_state["paso_compra"] = 2
+                    st.rerun()
+
+            with col2:
+                reservar = st.button(
+                    "✅ RESERVAR MIS BOLETOS",
+                    key="reservar_final",
+                    use_container_width=True,
+                )
+
+            if reservar:
+                if not comprobante_file:
+                    st.error("Debes subir la imagen del volante/comprobante antes de continuar.")
+                else:
+                    conn = sqlite3.connect(DB_FILE)
+                    c = conn.cursor()
+                    c.execute(
+                        "SELECT id, numero FROM boletos WHERE rifa_id = ? AND estado = 'disponible'",
+                        (st.session_state["rifa_seleccionada"],),
+                    )
+                    disp = c.fetchall()
+
+                    cant_boletos = st.session_state["cant_boletos"]
+
+                    if len(disp) < cant_boletos:
+                        st.error("No hay suficientes boletos disponibles.")
+                        conn.close()
+                    else:
+                        asignados = random.sample(disp, cant_boletos)
+                        os.makedirs("comprobantes", exist_ok=True)
+
+                        extension = os.path.splitext(comprobante_file.name)[1].lower()
+                        if extension not in [".png", ".jpg", ".jpeg"]:
+                            extension = ".png"
+
+                        path_comp = (
+                            f"comprobantes/{st.session_state['telefono_cliente']}_"
+                            f"{datetime.datetime.now().timestamp()}{extension}"
                         )
-                    conn.commit()
-                    conn.close()
 
-                    st.success("🎉 ¡Boletos asignados temporalmente!")
-                    st.info("Tus boletos quedan reservados temporalmente mientras se valida el comprobante.")
+                        imagen_comprobante = Image.open(comprobante_file)
+                        if imagen_comprobante.mode in ("RGBA", "LA", "P"):
+                            imagen_comprobante = imagen_comprobante.convert("RGB")
+                        imagen_comprobante.save(path_comp)
 
-                    st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
-                    cols_num = st.columns(min(len(num_asignados), 5))
-                    for i, n in enumerate(num_asignados):
-                        cols_num[i % 5].metric("Boleto", n, delta="Pendiente", delta_color="off")
+                        ahora = datetime.datetime.now()
+                        num_asignados = []
+
+                        for b_id, b_num in asignados:
+                            num_asignados.append(b_num)
+                            c.execute(
+                                """
+                                UPDATE boletos
+                                SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?,
+                                    metodo_pago = ?, comprobante = ?, fecha_reserva = ?
+                                WHERE id = ?
+                                """,
+                                (
+                                    st.session_state["nombre_cliente"],
+                                    st.session_state["telefono_cliente"],
+                                    st.session_state["banco_pago"],
+                                    path_comp,
+                                    ahora,
+                                    b_id,
+                                ),
+                            )
+
+                        conn.commit()
+                        conn.close()
+
+                        st.success("🎉 ¡Boletos asignados temporalmente!")
+                        st.info(
+                            "Tus boletos quedan reservados temporalmente mientras se valida el comprobante."
+                        )
+
+                        st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
+                        cols_num = st.columns(min(len(num_asignados), 5))
+                        for i, n in enumerate(num_asignados):
+                            cols_num[i % 5].metric(
+                                "Boleto", n, delta="Pendiente", delta_color="off"
+                            )
+
+                        # Evita que al actualizar la página se vuelva a mostrar
+                        # inmediatamente el formulario de compra.
+                        st.session_state["compra_completada"] = True
+                        st.session_state.pop("rifa_seleccionada", None)
+                        st.session_state.pop("paso_compra", None)
 
 # ---------------------------------------------------------
 # SECCIÓN: VERIFICADOR
