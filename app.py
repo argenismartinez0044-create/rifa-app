@@ -543,14 +543,14 @@ if seccion == "🏠 Inicio & Catálogo":
                  ahora = datetime.datetime.now()
                  num_asignados = []
 
-                    for b_id, b_num in asignados:
-                        num_asignados.append(b_num)
-                        c.execute(
-                            """
-                            UPDATE boletos 
-                            SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?, 
-                                metodo_pago = ?, comprobante = ?, fecha_reserva = ?
-                            WHERE id = ?
+                for b_id, b_num in asignados:
+                    num_asignados.append(b_num)
+                    c.execute(
+                        """
+                        UPDATE boletos 
+                        SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?, 
+                        metodo_pago = ?, comprobante = ?, fecha_reserva = ?
+                        WHERE id = ?
                             """,
                             (
                                 nombre_cliente,
