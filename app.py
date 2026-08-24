@@ -259,30 +259,23 @@ if seccion == "🏠 Inicio & Catálogo":
     st.markdown("---")
     st.subheader("🛍️ CATÁLOGO DE RIFAS")
 
-    cat_filtro = st.radio(
-        "Categoría:",
-        ["TODOS", "Juego", "TELÉFONO", "DINERO", "VEHÍCULOS"],
-        horizontal=True,
-    )
+   st.markdown(
+    f"""
+    <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
+                padding: 18px; margin-top: 10px; margin-bottom: 10px;">
+        <h4>🏦 {banco_pago}</h4>
+        <p>Tipo: <strong>Ahorros</strong></p>
+        <p>Titular: <strong>{titular}</strong></p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    if cat_filtro == "TODOS":
-        c.execute("SELECT * FROM rifas")
-    else:
-        c.execute("SELECT * FROM rifas WHERE categoria = ?", (cat_filtro,))
-    rifas = c.fetchall()
-    conn.close()
+st.caption("📋 Haz clic en el icono a la derecha del número para copiar:")
+st.code(cuenta, language=None)
 
-    cols = st.columns(2)
-    for idx, r in enumerate(rifas):
-        r_id, r_nombre, r_cat, r_precio, r_min, r_total, r_img, r_fecha = r
-
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute(
-            "SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado IN ('reservado', 'confirmado')",
-            (r_id,),
+if img_banco and os.path.exists(img_banco):
+    st.image(img_banco, width=200)
         )
         vendidos = c.fetchone()[0]
         conn.close()
