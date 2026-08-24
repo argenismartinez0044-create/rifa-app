@@ -83,9 +83,11 @@ def abrir_soporte_ia():
             ]
         ):
             resp = (
-                "**Cuentas bancarias oficiales:**\n\n"
-                "🔴 **Banreservas (Ahorros):** `9606561652` (Argenis Martinez C.)\n"
-                "🔵 **Banco Popular (Ahorros):** `821794971` (Argenis Martinez)"
+                "**Métodos de pago:**\n\n"
+                "Después de seleccionar una rifa y completar tus datos, "
+                "podrás elegir entre **Banreservas** y **Banco Popular**. "
+                "Al seleccionar el banco aparecerán automáticamente su logo, "
+                "titular, tipo de cuenta y número de cuenta para copiar."
             )
         elif any(
             w in txt for w in ["verificar", "consultar", "mi boleto", "numeros"]
@@ -265,6 +267,7 @@ def mostrar_ventana_boletos():
         "Guarda tus números. Puedes consultar su estado posteriormente "
         "en el Verificador de Boletos."
     )
+    st.info("Al cerrar esta ventana, tus datos de compra se borrarán de esta pantalla y volverás al catálogo de rifas.")
 
     if st.button("✅ ENTIENDO", use_container_width=True):
         for clave in [
@@ -280,6 +283,10 @@ def mostrar_ventana_boletos():
             "banco_pago",
             "nombre_cliente",
             "telefono_cliente",
+            "nivel_boletos",
+            "cant_boletos",
+            "comprobante_file",
+            "compra_completada",
         ]:
             st.session_state.pop(clave, None)
         st.rerun()
@@ -310,8 +317,8 @@ if seccion == "🏠 Inicio & Catálogo":
     with st.expander("📺 **¿CÓMO PARTICIPAR?** — 5 pasos simples"):
         st.write(
             "1. Selecciona un premio del catálogo.\n"
-            "2. Elige la cantidad de boletos que deseas comprar.\n"
-            "3. Haz la transferencia a Banreservas o Banco Popular.\n"
+            "2. Registra tu nombre, teléfono y cantidad de boletos.\n"
+            "3. Selecciona Banreservas o Banco Popular para ver los datos de pago.\n"
             "4. Sube la captura de tu comprobante de pago.\n"
             "5. Consulta tus números en el **Verificador de Boletos**."
         )
@@ -417,6 +424,42 @@ if seccion == "🏠 Inicio & Catálogo":
         if paso == 1:
             st.subheader("📝 1. Completa tus datos")
 
+            # Selección rápida por niveles + cantidad personalizada.
+            minimo_rifa = int(minimo)
+            precio_boleto = float(precio)
+
+            st.markdown("### 🎟️ Elige tu cantidad de boletos")
+            st.caption(
+                f"Cantidad mínima: {minimo_rifa} boletos. "
+                "Selecciona un nivel o coloca una cantidad manual desde el mínimo."
+            )
+
+            niveles = [
+                ("🟢 NORMAL", minimo_rifa),
+                ("🔵 DOBLE", minimo_rifa * 2),
+                ("🟣 INTERMEDIO", minimo_rifa * 3),
+                ("🟠 PROFESIONAL", minimo_rifa * 5),
+                ("🔴 PRO", minimo_rifa * 10),
+            ]
+
+            # Los botones de niveles están fuera del formulario porque
+            # Streamlit no permite st.button() dentro de st.form().
+            nivel_cols = st.columns(len(niveles))
+            for i, (nombre_nivel, cantidad_nivel) in enumerate(niveles):
+                cantidad_nivel = min(100, cantidad_nivel)
+                if nivel_cols[i].button(
+                    f"{nombre_nivel} · {cantidad_nivel}",
+                    key=f"nivel_{st.session_state['rifa_seleccionada']}_{i}",
+                    use_container_width=True,
+                ):
+                    st.session_state["cant_boletos"] = cantidad_nivel
+                    st.session_state["nivel_boletos"] = nombre_nivel
+                    st.rerun()
+
+            cantidad_guardada = int(
+                st.session_state.get("cant_boletos", minimo_rifa)
+            )
+
             with st.form("form_datos_cliente", clear_on_submit=False):
                 nombre_cliente = st.text_input(
                     "Nombre Completo",
@@ -425,42 +468,6 @@ if seccion == "🏠 Inicio & Catálogo":
                 telefono_cliente = st.text_input(
                     "Teléfono / WhatsApp (Ej: 8091234567)",
                     value=st.session_state.get("telefono_cliente", ""),
-                )
-                # Selección rápida por niveles + cantidad personalizada.
-                minimo_rifa = int(minimo)
-                precio_boleto = float(precio)
-
-                st.markdown("### 🎟️ Elige tu cantidad de boletos")
-                st.caption(
-                    f"Cantidad mínima: {minimo_rifa} boletos. "
-                    "Toca un nivel para seleccionarlo automáticamente."
-                )
-
-                niveles = [
-                    ("🟢 NORMAL", minimo_rifa),
-                    ("🔵 DOBLE", minimo_rifa * 2),
-                    ("🟣 INTERMEDIO", minimo_rifa * 3),
-                    ("🟠 PROFESIONAL", minimo_rifa * 5),
-                    ("🔴 PRO", minimo_rifa * 10),
-                ]
-
-                # Streamlit no permite botones dentro de un st.form,
-                # por eso los niveles se colocan antes del formulario.
-                # La selección queda guardada en session_state.
-                nivel_cols = st.columns(len(niveles))
-                for i, (nombre_nivel, cantidad_nivel) in enumerate(niveles):
-                    cantidad_nivel = min(100, cantidad_nivel)
-                    if nivel_cols[i].button(
-                        f"{nombre_nivel} · {cantidad_nivel}",
-                        key=f"nivel_{st.session_state['rifa_seleccionada']}_{i}",
-                        use_container_width=True,
-                    ):
-                        st.session_state["cant_boletos"] = cantidad_nivel
-                        st.session_state["nivel_boletos"] = nombre_nivel
-                        st.rerun()
-
-                cantidad_guardada = int(
-                    st.session_state.get("cant_boletos", minimo_rifa)
                 )
 
                 cant_boletos = st.number_input(
@@ -472,13 +479,11 @@ if seccion == "🏠 Inicio & Catálogo":
                     key=f"cant_manual_{st.session_state['rifa_seleccionada']}",
                 )
 
-                # Mostrar siempre el cálculo actualizado.
                 total_pagar = int(cant_boletos) * precio_boleto
                 st.markdown(
                     f"### 💰 {int(cant_boletos)} boletos × RD$ {precio_boleto:.2f} "
                     f"= **RD$ {total_pagar:.2f}**"
                 )
-
 
                 continuar_datos = st.form_submit_button(
                     "➡️ CONTINUAR AL PAGO",
@@ -492,6 +497,9 @@ if seccion == "🏠 Inicio & Catálogo":
                     st.session_state["nombre_cliente"] = nombre_cliente.strip()
                     st.session_state["telefono_cliente"] = telefono_cliente.strip()
                     st.session_state["cant_boletos"] = int(cant_boletos)
+                    st.session_state["nivel_boletos"] = st.session_state.get(
+                        "nivel_boletos", "✏️ MANUAL"
+                    )
                     st.session_state["paso_compra"] = 2
                     st.rerun()
 
@@ -499,26 +507,57 @@ if seccion == "🏠 Inicio & Catálogo":
         elif paso == 2:
             st.subheader("💳 2. Selecciona el banco para realizar el depósito")
 
-            banco_pago = st.radio(
-                "¿Dónde deseas depositar?",
-                ["Banreservas", "Banco Popular"],
-                horizontal=True,
-                key="banco_pago",
-            )
+            # Selección visual de banco mediante sus logos.
+            bancos = {
+                "Banreservas": {
+                    "logo": "banreservas.png",
+                    "titular": "ARGENIS MARTINEZ C.",
+                    "cuenta": "9606561652",
+                },
+                "Banco Popular": {
+                    "logo": "popular.png",
+                    "titular": "ARGENIS MARTINEZ",
+                    "cuenta": "821794971",
+                },
+            }
 
-            if banco_pago == "Banreservas":
-                titular = "ARGENIS MARTINEZ C."
-                cuenta = "9606561652"
-            else:
-                titular = "ARGENIS MARTINEZ"
-                cuenta = "821794971"
+            banco_actual = st.session_state.get("banco_pago", "Banreservas")
+            banco_cols = st.columns(2)
+
+            for i, nombre_banco in enumerate(bancos):
+                datos_banco = bancos[nombre_banco]
+                with banco_cols[i]:
+                    if os.path.exists(datos_banco["logo"]):
+                        st.image(datos_banco["logo"], use_container_width=True)
+                    else:
+                        st.markdown(
+                            f"<div style='height:120px; display:flex; align-items:center; "
+                            f"justify-content:center; border:1px solid rgba(255,255,255,.2); "
+                            f"border-radius:12px; font-size:1.2rem; font-weight:800;'>"
+                            f"🏦 {nombre_banco}</div>",
+                            unsafe_allow_html=True,
+                        )
+
+                    seleccionado = banco_actual == nombre_banco
+                    if st.button(
+                        "✅ SELECCIONADO" if seleccionado else f"SELECCIONAR {nombre_banco.upper()}",
+                        key=f"seleccionar_banco_{nombre_banco}",
+                        use_container_width=True,
+                    ):
+                        st.session_state["banco_pago"] = nombre_banco
+                        st.rerun()
+
+            banco_pago = st.session_state.get("banco_pago", "Banreservas")
+            datos_banco = bancos[banco_pago]
+            titular = datos_banco["titular"]
+            cuenta = datos_banco["cuenta"]
 
             st.markdown(
                 f"""
                 <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
-                            padding: 18px; margin-top: 10px;">
+                            padding: 18px; margin-top: 16px;">
                     <h4>🏦 {banco_pago}</h4>
-                    <p>Tipo: <strong>Ahorros</strong></p>
+                    <p>Tipo de cuenta: <strong>Ahorros</strong></p>
                     <p>Titular: <strong>{titular}</strong></p>
                     <p>Número de cuenta:</p>
                     <div style="font-size: 1.6rem; font-weight: 800;
@@ -528,8 +567,6 @@ if seccion == "🏠 Inicio & Catálogo":
                 unsafe_allow_html=True,
             )
 
-            # Botón de copiar independiente de Streamlit para que funcione
-            # directamente desde el navegador.
             st.markdown(
                 f"""
                 <button onclick="navigator.clipboard.writeText('{cuenta}').then(
@@ -575,6 +612,7 @@ if seccion == "🏠 Inicio & Catálogo":
                 f"Banco seleccionado: **{st.session_state['banco_pago']}** · "
                 f"Total a pagar: **RD$ {st.session_state['cant_boletos'] * precio:.2f}**"
             )
+            st.caption("Puedes volver al paso anterior si deseas cambiar de banco antes de subir el comprobante.")
 
             comprobante_file = st.file_uploader(
                 "Selecciona la imagen del volante/comprobante",
@@ -671,11 +709,12 @@ if seccion == "🏠 Inicio & Catálogo":
                                 "Boleto", n, delta="Pendiente", delta_color="off"
                             )
 
-                        # Evita que al actualizar la página se vuelva a mostrar
-                        # inmediatamente el formulario de compra.
+                        # Guarda los números para la ventana final. Al cerrar
+                        # la ventana se limpia todo el formulario y vuelve al catálogo.
+                        st.session_state["boletos_confirmados_ventana"] = num_asignados
+                        st.session_state["mostrar_confirmacion_boletos"] = True
                         st.session_state["compra_completada"] = True
-                        st.session_state.pop("rifa_seleccionada", None)
-                        st.session_state.pop("paso_compra", None)
+                        st.rerun()
 
 # ---------------------------------------------------------
 # SECCIÓN: VERIFICADOR
