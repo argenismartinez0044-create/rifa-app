@@ -233,6 +233,61 @@ if st.sidebar.button("🤖 Abrir Chat de Soporte IA"):
     abrir_soporte_ia()
 
 # ---------------------------------------------------------
+# VENTANA DE CONFIRMACIÓN DE BOLETOS
+# ---------------------------------------------------------
+@st.dialog("🎟️ ¡Tus boletos fueron registrados!")
+def mostrar_ventana_boletos():
+    numeros = st.session_state.get("boletos_confirmados_ventana", [])
+    numeros_texto = ", ".join(numeros)
+
+    st.success("🎉 ¡Pago y comprobante recibidos correctamente!")
+    st.markdown("### Tus números de boletos")
+    st.code(numeros_texto, language="text")
+
+    st.markdown(
+        f"""
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="navigator.clipboard.writeText({numeros_texto!r})"
+                    style="padding:10px 18px; border-radius:10px; border:0;
+                    font-weight:700; cursor:pointer;">
+                📋 COPIAR BOLETOS
+            </button>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.warning(
+        "⏳ Tus boletos quedan reservados temporalmente y tendrán un plazo "
+        "máximo de 24 horas para ser confirmados."
+    )
+    st.caption(
+        "Guarda tus números. Puedes consultar su estado posteriormente "
+        "en el Verificador de Boletos."
+    )
+
+    if st.button("✅ ENTIENDO", use_container_width=True):
+        for clave in [
+            "boletos_confirmados_ventana",
+            "mostrar_confirmacion_boletos",
+            "rifa_seleccionada",
+            "nombre_rifa",
+            "precio_rifa",
+            "min_rifa",
+            "cant_boletos",
+            "nivel_boletos",
+            "paso_compra",
+            "banco_pago",
+            "nombre_cliente",
+            "telefono_cliente",
+        ]:
+            st.session_state.pop(clave, None)
+        st.rerun()
+
+if st.session_state.get("mostrar_confirmacion_boletos"):
+    mostrar_ventana_boletos()
+
+# ---------------------------------------------------------
 # SECCIÓN: INICIO Y CATÁLOGO
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
