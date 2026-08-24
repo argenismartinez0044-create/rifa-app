@@ -150,7 +150,7 @@ def init_db():
                 15,
                 100000,
                 "play.jpg",
-                "Fecha pendiente",
+                "Se sacara el ganador al completar la lista",
             ),
         )
         c.execute(
@@ -162,7 +162,7 @@ def init_db():
                 10,
                 100000,
                 "iphone.jpg",
-                "Al vender el 80%",
+                "Cada 20% se sacara un ganador",
             ),
         )
 
