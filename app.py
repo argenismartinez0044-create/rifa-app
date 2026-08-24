@@ -635,8 +635,9 @@ elif seccion == "❓ Cómo jugar":
     """
     )
 
-        if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
-            c.execute(
+     # Debe estar alineado con la columna 1 (c1) o el bucle anterior
+     if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
+        c.execute(
                 """
                 UPDATE boletos
                 SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL,
