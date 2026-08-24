@@ -264,7 +264,7 @@ if seccion == "🏠 Inicio & Catálogo":
         
         with cols_rifa[idx]:
             if r_img and os.path.exists(r_img):
-                st.image(r_img, use_column_width=True)
+          st.image(r_img, use_container_width=True)
             st.subheader(r_nombre)
             st.write(f"📅 **Fecha:** {r_fecha}")
             st.write(f"📊 **PROGRESO: {progreso}%**")
