@@ -8,13 +8,13 @@ import streamlit as st
 DB_FILE = "rifas_v4.db"
 WHATSAPP_NUMERO = "8294835217"
 
-st.set_page_config(page_title="Rifas Luxury", page_icon="🎲", layout="wide")
+st.set_page_config(page_title="Rifas Sirio RD", page_icon="🎲", layout="wide")
 
 
 # ---------------------------------------------------------
 # DIÁLOGO DE CHAT IA
 # ---------------------------------------------------------
-@st.dialog("🤖 Asistente Virtual - Rifas Luxury")
+@st.dialog("🤖 Asistente Virtual - Rifas Sirio RD")
 def abrir_soporte_ia():
     st.caption("Respuestas instantáneas las 24 horas.")
 
@@ -415,13 +415,16 @@ if seccion == "🏠 Inicio & Catálogo":
                     conn.commit()
                     conn.close()
 
-                    st.success("🎉 ¡Boletos asignados!")
-                    st.warning("⚠️ Números reservados a espera de verificación.")
+                    st.success("🎉 ¡Boletos asignados temporalmente!")
+                    st.info(
+                        "⏳ **Estado:** PENDIENTE DE CONFIRMACIÓN\n\n"
+                        "Tus números ya están apartados a tu nombre. Nuestro equipo validará el comprobante de pago en un plazo máximo de **24 horas** para cambiar su estado a **CONFIRMADO**."
+                    )
 
-                    st.subheader("🎟️ Tus Números Asignados:")
+                    st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
                     cols_num = st.columns(min(len(num_asignados), 5))
                     for i, n in enumerate(num_asignados):
-                        cols_num[i % 5].metric("Boleto", n)
+                        cols_num[i % 5].metric("Boleto", n, delta="Pendiente", delta_color="off")
 
 # ---------------------------------------------------------
 # SECCIÓN: VERIFICADOR
@@ -441,13 +444,20 @@ elif seccion == "🔎 Verificador de boletos":
             mis_boletos = c.fetchall()
             conn.close()
 
-            if mis_boletos:
-                st.success(f"Se encontraron {len(mis_boletos)} boletos:")
+      if mis_boletos:
+                st.success(f"Se encontraron {len(mis_boletos)} boletos asociados a tu número:")
                 for num, est, rifa_nom in mis_boletos:
                     c1, c2, c3 = st.columns(3)
                     c1.write(f"🎟️ **Boleto:** `{num}`")
                     c2.write(f"🏆 **Rifa:** {rifa_nom}")
-                    c3.write(f"📌 **Estado:** `{est.upper()}`")
+                    
+                    if est == "reservado":
+                        c3.markdown("📌 **Estado:** ⏳ *PENDIENTE (En revisión max 24h)*")
+                    elif est == "confirmado":
+                        c3.markdown("📌 **Estado:** ✅ *CONFIRMADO Y VÁLIDO*")
+                    else:
+                        c3.markdown(f"📌 **Estado:** `{est.upper()}`")
+                        
                     st.markdown("---")
             else:
                 st.info("No se encontraron registros con este número.")
