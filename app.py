@@ -648,6 +648,6 @@ if c2.button(f"Rechazar {num}", key=f"rec_{b_id}"):
     conn.commit()
     st.rerun()
 
-      st.markdown("---")
+st.markdown("---")
 
 conn.close()
