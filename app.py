@@ -360,7 +360,7 @@ if seccion == "🏠 Inicio & Catálogo":
         )
 
         # PASO 1: Datos del participante + Selección interactiva de combos
-        if paso == 1:
+   if paso == 1:
             st.subheader("📝 1. Completa tus datos y selecciona tu combo")
 
             if "cant_boletos" not in st.session_state:
@@ -426,7 +426,7 @@ if seccion == "🏠 Inicio & Catálogo":
                     use_container_width=True,
                 )
 
-            if continuar_datos:
+   if continuar_datos:
                 if not nombre_cliente.strip() or not telefono_cliente.strip():
                     st.error("Por favor completa tu nombre y teléfono/WhatsApp.")
                 else:
@@ -437,13 +437,13 @@ if seccion == "🏠 Inicio & Catálogo":
                     st.rerun()
 
         # PASO 2: Banco, imágenes y número de cuenta
-        elif paso == 2:
+   elif paso == 2:
             st.subheader("💳 2. Selecciona el banco para realizar el depósito")
 
             banco_pago = st.radio(
                 "¿Dónde deseas depositar?",
                 ["Banreservas", "Banco Popular"],
-                horizontal=True,
+               horizontal=True,
                 key="banco_pago",
             )
 
