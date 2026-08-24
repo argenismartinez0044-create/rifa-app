@@ -240,7 +240,7 @@ if seccion == "🏠 Inicio & Catálogo":
             "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Plataforma Exclusiva de Rifas</p>",
             unsafe_allow_html=True,
         )
-        st.markdown(
+    st.markdown(
             "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios Exclusivos Garantizados</h1>",
            # PASO 2: Banco, imágenes y número de cuenta
         elif paso == 2:
