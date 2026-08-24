@@ -242,52 +242,66 @@ if seccion == "🏠 Inicio & Catálogo":
         )
         st.markdown(
             "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios Exclusivos Garantizados</h1>",
-            unsafe_allow_html=True,
-        )
+           # PASO 2: Banco, imágenes y número de cuenta
+        elif paso == 2:
+            st.subheader("💳 2. Selecciona el banco para realizar el depósito")
 
-    st.markdown("---")
+            banco_pago = st.radio(
+                "¿Dónde deseas depositar?",
+                ["Banreservas", "Banco Popular"],
+                horizontal=True,
+                key="banco_pago",
+            )
 
-    with st.expander("📺 **¿CÓMO PARTICIPAR?** — 5 pasos simples"):
-        st.write(
-            "1. Selecciona un premio del catálogo.\n"
-            "2. Elige tus datos y tu combo de boletos.\n"
-            "3. Haz la transferencia a Banreservas o Banco Popular.\n"
-            "4. Sube la captura de tu comprobante de pago.\n"
-            "5. Consulta tus números en el **Verificador de Boletos**."
-        )
+            if banco_pago == "Banreservas":
+                titular = "ARGENIS MARTINEZ C."
+                cuenta = "9606561652"
+                img_banco = "banreservas.png" if os.path.exists("banreservas.png") else ("barreserva.png" if os.path.exists("barreserva.png") else None)
+            else:
+                titular = "ARGENIS MARTINEZ"
+                cuenta = "821794971"
+                img_banco = "popular.png" if os.path.exists("popular.png") else None
 
-    st.markdown("---")
-    st.subheader("🛍️ CATÁLOGO DE RIFAS")
+            st.markdown(
+                f"""
+                <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
+                            padding: 18px; margin-top: 10px; margin-bottom: 10px;">
+                    <h4>🏦 {banco_pago}</h4>
+                    <p>Tipo: <strong>Ahorros</strong></p>
+                    <p>Titular: <strong>{titular}</strong></p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-   st.markdown(
-    f"""
-    <div style="background: rgba(255,255,255,0.08); border-radius: 12px;
-                padding: 18px; margin-top: 10px; margin-bottom: 10px;">
-        <h4>🏦 {banco_pago}</h4>
-        <p>Tipo: <strong>Ahorros</strong></p>
-        <p>Titular: <strong>{titular}</strong></p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+            st.caption("📋 Haz clic en el icono a la derecha del número para copiar:")
+            st.code(cuenta, language=None)
 
-st.caption("📋 Haz clic en el icono a la derecha del número para copiar:")
-st.code(cuenta, language=None)
+            if img_banco and os.path.exists(img_banco):
+                st.image(img_banco, width=200)
 
-if img_banco and os.path.exists(img_banco):
-    st.image(img_banco, width=200)
-        )
-        vendidos = c.fetchone()[0]
-        conn.close()
+            total_pagar = st.session_state["cant_boletos"] * precio
+            st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:.2f}**")
+            st.info("Realiza el depósito y luego sube la foto del volante/comprobante.")
 
-        progreso = int((vendidos / r_total) * 100) if r_total > 0 else 0
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(
+                    "⬅️ VOLVER A DATOS Y COMBOS",
+                    key="volver_datos",
+                    use_container_width=True,
+                ):
+                    st.session_state["paso_compra"] = 1
+                    st.rerun()
 
-        with cols[idx % 2]:
-            st.markdown(f"### 🏷️ {r_nombre}")
-            st.caption(f"Categoría: **{r_cat}**")
-            if os.path.exists(r_img):
-              st.image(r_img, use_container_width=True)
-
+            with col2:
+                if st.button(
+                    "➡️ CONTINUAR Y SUBIR COMPROBANTE",
+                    key="continuar_comprobante",
+                    use_container_width=True,
+                ):
+                    st.session_state["paso_compra"] = 3
+                    st.rerun()
             st.write(f"📅 **Fecha:** {r_fecha}")
             st.write(f"📊 **PROGRESO: {progreso}%**")
             st.progress(progreso / 100)
