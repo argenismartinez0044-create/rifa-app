@@ -6,6 +6,7 @@ from PIL import Image
 import streamlit as st
 
 DB_FILE = "rifas_v2.db"
+WHATSAPP_NUMERO = "8294835217"  # ⚠️ REEMPLAZA CON TU NÚMERO DE TELÉFONO REAL
 
 
 def init_db():
@@ -57,10 +58,10 @@ def init_db():
                 "PlayStation 5 Pro",
                 "Juego",
                 5.0,
-                10,
+                15,
                 100000,
                 "play.jpg",
-                "Fecha pendiente de asignar",
+                "Una vez se complete la lista sacamos el ganador",
             ),
         )
         c.execute(
@@ -72,10 +73,10 @@ def init_db():
                 "5 iPhone 17 Pro Max",
                 "TELÉFONO",
                 15.0,
-                5,
+                10,
                 100000,
                 "iphone.jpg",
-                "Se coloca con el 80% vendido",
+                "Cada 20% sacamos un ganador",
             ),
         )
 
@@ -133,6 +134,7 @@ seccion = st.sidebar.radio(
         "🏠 Inicio & Catálogo",
         "🔎 Verificador de boletos",
         "❓ Cómo jugar",
+        "🤖 Soporte IA",
         "🏆 Ganadores",
         "⚙️ Administración",
     ],
@@ -456,14 +458,64 @@ elif seccion == "❓ Cómo jugar":
     )
 
 # ---------------------------------------------------------
-# 6. SECCIÓN: GANADORES
+# 6. SECCIÓN: SOPORTE IA CON DERIVACIÓN HUMANA
+# ---------------------------------------------------------
+elif seccion == "🤖 Soporte IA":
+    st.header("🤖 Asistente de Soporte Virtual")
+    st.caption("Respondo tus dudas de forma automática. Si necesitas hablar con una persona, te conectaré directamente con el Administrador.")
+
+    if "mensajes_chat" not in st.session_state:
+        st.session_state["mensajes_chat"] = [
+            {"role": "assistant", "content": "¡Hola! Soy el asistente virtual de Rifas Luxury. ¿En qué te puedo ayudar hoy? Puedes preguntarme sobre pagos, cómo verificar tus boletos, fechas de sorteo o la dinámica."}
+        ]
+
+    for msg in st.session_state["mensajes_chat"]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    if user_input := st.chat_input("Escribe tu pregunta aquí..."):
+        st.session_state["mensajes_chat"].append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        txt = user_input.lower()
+
+        # Evaluación lógica de intenciones
+        if any(w in txt for w in ["pago", "banco", "transferencia", "banreservas", "popular", "cuentas"]):
+            respuesta = "Aceptamos transferencias por **Banreservas** y **Banco Popular**. Una vez realizada la transferencia, sube la foto del comprobante en el formulario de compra para reservar tus boletos."
+        elif any(w in txt for w in ["verificar", "consultar", "mi boleto", "mis boletos", "donde estan"]):
+            respuesta = "Puedes consultar tus números en tiempo real en la pestaña **🔎 Verificador de boletos** del menú lateral utilizando tu número de teléfono registrado."
+        elif any(w in txt for w in ["ganador", "sorteo", "fecha", "cuando se rifa"]):
+            respuesta = "Los sorteos se realizan cuando se alcanza el porcentaje mínimo de boletos vendidos indicado en cada rifa. La fecha exacta se publica en nuestro catálogo y redes sociales."
+        elif any(w in txt for w in ["persona", "humano", "administrador", "contacto", "telefono", "hablar con alguien", "whatsapp", "soporte"]):
+            respuesta = f"Para hablar directamente con una persona física, contáctanos vía WhatsApp a nuestro número oficial: **{WHATSAPP_NUMERO}** o toca el enlace directo."
+        else:
+            respuesta = f"No logré entender completamente tu consulta. Para atender tu caso de forma personalizada, puedes comunicarte directamente con una persona física vía WhatsApp al **{WHATSAPP_NUMERO}**."
+
+        st.session_state["mensajes_chat"].append({"role": "assistant", "content": respuesta})
+        with st.chat_message("assistant"):
+            st.markdown(respuesta)
+            if "contacto" in respuesta or "WhatsApp" in respuesta or "No logré" in respuesta:
+                st.markdown(
+                    f"""
+                    <a href="https://wa.me/{WHATSAPP_NUMERO}?text=Hola,%20necesito%20soporte%20personalizado%20con%20una%20rifa" target="_blank">
+                        <button style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                            📲 Hablar con un Asesor Humano en WhatsApp
+                        </button>
+                    </a>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+# ---------------------------------------------------------
+# 7. SECCIÓN: GANADORES
 # ---------------------------------------------------------
 elif seccion == "🏆 Ganadores":
     st.header("🏆 Galería de Ganadores")
     st.write("Próximamente estaremos publicando las entregas directas a nuestros ganadores.")
 
 # ---------------------------------------------------------
-# 7. SECCIÓN: ADMINISTRACIÓN
+# 8. SECCIÓN: ADMINISTRACIÓN
 # ---------------------------------------------------------
 elif seccion == "⚙️ Administración":
     st.header("⚙️ Panel de Administración")
