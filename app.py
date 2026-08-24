@@ -535,13 +535,13 @@ if seccion == "🏠 Inicio & Catálogo":
             else:
                  asignados = random.sample(disp, cant_boletos)
 
-                    os.makedirs("comprobantes", exist_ok=True)
-                    path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.jpg"
-                    img = Image.open(comprobante_file)
-                    img.save(path_comp)
+                 os.makedirs("comprobantes", exist_ok=True)
+                 path_comp = f"comprobantes/{telefono_cliente}_{datetime.datetime.now().timestamp()}.jpg"
+                 img = Image.open(comprobante_file)
+                 img.save(path_comp)
 
-                    ahora = datetime.datetime.now()
-                    num_asignados = []
+                 ahora = datetime.datetime.now()
+                 num_asignados = []
 
                     for b_id, b_num in asignados:
                         num_asignados.append(b_num)
