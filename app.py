@@ -30,7 +30,7 @@ if "vista_actual" not in st.session_state:
 if "chat_abierto" not in st.session_state:
     st.session_state["chat_abierto"] = False
 if "banco_pago" not in st.session_state:
-    st.session_state["banco_pago"] = "Banreservas"
+    st.session_state["banco_pago"] = None
 if "mensajes_chat" not in st.session_state:
     st.session_state["mensajes_chat"] = [
         {
@@ -169,6 +169,16 @@ st.markdown(
         box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
     }}
 
+    .total-box {{
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border: 2px solid #38bdf8;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        margin: 20px 0;
+        box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25);
+    }}
+
     @keyframes pulse-gold {{
         0% {{ box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); opacity: 0.8; }}
         70% {{ box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); opacity: 1; }}
@@ -287,7 +297,6 @@ def init_db():
         """
     )
 
-    # Migración por si la tabla boletos fue creada previamente sin 'comprobante_hash'
     try:
         c.execute("ALTER TABLE boletos ADD COLUMN comprobante_hash TEXT")
     except sqlite3.OperationalError:
@@ -576,6 +585,7 @@ elif st.session_state["vista_actual"] == "rifas":
                     st.session_state["min_rifa"] = minimo
                     st.session_state["paso_compra"] = 1
                     st.session_state["cant_boletos"] = minimo
+                    st.session_state["banco_pago"] = None
 
                 st.button(
                     f"🎮 JUGAR POR {r_nombre.upper()}",
@@ -641,9 +651,10 @@ elif st.session_state["vista_actual"] == "rifas":
 
         st.markdown(f"## 📝 Completa tu Registro - {nombre}")
 
+        # Contador de boletos
         c_restar, c_num, c_sumar = st.columns([1, 2, 1])
         with c_restar:
-            if st.button("➖ Restar", use_container_width=True):
+            if st.button("➖", use_container_width=True):
                 if st.session_state["cant_boletos"] > minimo:
                     st.session_state["cant_boletos"] -= 1
                     st.rerun()
@@ -653,9 +664,22 @@ elif st.session_state["vista_actual"] == "rifas":
                 unsafe_allow_html=True,
             )
         with c_sumar:
-            if st.button("➕ Sumar", use_container_width=True):
+            if st.button("➕", use_container_width=True):
                 st.session_state["cant_boletos"] += 1
                 st.rerun()
+
+        # TOTAL A PAGAR RESALTADO
+        monto_total = st.session_state["cant_boletos"] * precio
+        st.markdown(
+            f"""
+            <div class="total-box">
+                <span style="color: #94a3b8; font-size: 0.9rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Monto Total a Pagar</span>
+                <div style="color: #38bdf8; font-size: 2.2rem; font-weight: 900; margin-top: 2px;">RD$ {monto_total:,.2f}</div>
+                <span style="color: #64748b; font-size: 0.8rem;">({st.session_state['cant_boletos']} boletos x RD$ {precio:,.2f})</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         st.markdown("### 👤 Datos del Participante")
         col_nom, col_tel = st.columns(2)
@@ -665,7 +689,7 @@ elif st.session_state["vista_actual"] == "rifas":
             telefono_cliente = st.text_input("Teléfono (WhatsApp) *")
 
         # ---------------------------------------------------------
-        # MÉTODO DE PAGO VISUAL
+        # MÉTODO DE PAGO VISUAL (SELECCIÓN PRIVADA)
         # ---------------------------------------------------------
         st.markdown("### 💳 Selecciona el Método de Pago *")
 
@@ -725,7 +749,10 @@ elif st.session_state["vista_actual"] == "rifas":
                 st.session_state["banco_pago"] = "Banco Popular"
                 st.rerun()
 
-        if is_banreservas:
+        # MOSTRAR DATOS SOLO TRAS LA SELECCIÓN DEL BANCO
+        if st.session_state["banco_pago"] is None:
+            st.info("👈 Por favor, haz clic en uno de los botones anteriores para seleccionar tu banco y ver los datos de transferencia.")
+        elif is_banreservas:
             num_cta_ban = "9606561652"
             st.markdown(
                 f"""
@@ -735,6 +762,7 @@ elif st.session_state["vista_actual"] == "rifas":
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Tipo de Cuenta:</strong> Cuenta de Ahorros</p>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.2rem;">{num_cta_ban}</span></p>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> ARGENIS MARTÍNEZ</p>
+                    <p style="margin: 5px 0; color: #f59e0b;"><strong>Monto Exacto a Transferir:</strong> RD$ {monto_total:,.2f}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -751,6 +779,7 @@ elif st.session_state["vista_actual"] == "rifas":
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Tipo de Cuenta:</strong> Cuenta de Ahorros</p>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.2rem;">{num_cta_pop}</span></p>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> ARGENIS MARTÍNEZ</p>
+                    <p style="margin: 5px 0; color: #f59e0b;"><strong>Monto Exacto a Transferir:</strong> RD$ {monto_total:,.2f}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -787,6 +816,8 @@ elif st.session_state["vista_actual"] == "rifas":
                 faltantes.append("Nombre Completo")
             if not telefono_cliente.strip():
                 faltantes.append("Teléfono / WhatsApp")
+            if st.session_state["banco_pago"] is None:
+                faltantes.append("Seleccionar un Banco de Pago (Banreservas o Banco Popular)")
             if comprobante_file is None:
                 faltantes.append("Comprobante de Pago")
             if not acepta_terminos:
@@ -800,9 +831,7 @@ elif st.session_state["vista_actual"] == "rifas":
                     + "\n- ".join(faltantes)
                 )
             else:
-                # ---------------------------------------------------------
                 # VERIFICACIÓN ANTI-DUPLICADOS (SHA-256 HASH)
-                # ---------------------------------------------------------
                 bytes_comprobante = comprobante_file.getvalue()
                 comp_hash = hashlib.sha256(bytes_comprobante).hexdigest()
 
