@@ -654,7 +654,7 @@ elif st.session_state["vista_actual"] == "rifas":
         # Contador de boletos
         c_restar, c_num, c_sumar = st.columns([1, 2, 1])
         with c_restar:
-            if st.button("➖ Restar", use_container_width=True):
+            if st.button("➖", use_container_width=True):
                 if st.session_state["cant_boletos"] > minimo:
                     st.session_state["cant_boletos"] -= 1
                     st.rerun()
@@ -664,7 +664,7 @@ elif st.session_state["vista_actual"] == "rifas":
                 unsafe_allow_html=True,
             )
         with c_sumar:
-            if st.button("➕ Sumar", use_container_width=True):
+            if st.button("➕", use_container_width=True):
                 st.session_state["cant_boletos"] += 1
                 st.rerun()
 
