@@ -120,6 +120,16 @@ st.markdown(
         opacity: 0.7;
     }}
 
+    /* Caja de detalles de cuenta desplegada */
+    .bank-details-box {{
+        background: #090d16;
+        border: 1px solid #38bdf8;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 15px;
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    }}
+
     @keyframes pulse-gold {{
         0% {{ box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); opacity: 0.8; }}
         70% {{ box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); opacity: 1; }}
@@ -610,7 +620,7 @@ elif st.session_state["vista_actual"] == "rifas":
             telefono_cliente = st.text_input("Teléfono (WhatsApp) *")
 
         # ---------------------------------------------------------
-        # MÉTODO DE PAGO VISUAL CON IMÁGENES Y SELECCIÓN FUNCIONAL
+        # MÉTODO DE PAGO VISUAL CON IMÁGENES Y DESPLIEGUE DINÁMICO
         # ---------------------------------------------------------
         st.markdown("### 💳 Selecciona el Método de Pago *")
 
@@ -635,7 +645,7 @@ elif st.session_state["vista_actual"] == "rifas":
                 f"""
                 <div class="{class_b1}">
                     <h4 style="color:#ffffff; margin:0;">🟣 BANRESERVAS</h4>
-                    <p style="color:#94a3b8; font-size:0.85rem; margin:5px 0 0 0;">Cuenta de Ahorros: <strong>9606561652</strong></p>
+                    <p style="color:#94a3b8; font-size:0.85rem; margin:5px 0 0 0;">Cuenta de Ahorros</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -655,7 +665,7 @@ elif st.session_state["vista_actual"] == "rifas":
                 f"""
                 <div class="{class_b2}">
                     <h4 style="color:#ffffff; margin:0;">🔵 BANCO POPULAR</h4>
-                    <p style="color:#94a3b8; font-size:0.85rem; margin:5px 0 0 0;">Cuenta de Ahorros: <strong>821794971</strong></p>
+                    <p style="color:#94a3b8; font-size:0.85rem; margin:5px 0 0 0;">Cuenta de Ahorros</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -670,9 +680,35 @@ elif st.session_state["vista_actual"] == "rifas":
                 st.session_state["banco_pago"] = "Banco Popular"
                 st.rerun()
 
-        st.info(
-            f"📌 Método de pago seleccionado actualmente: **{st.session_state['banco_pago']}**"
-        )
+        # Despliegue de datos de la cuenta seleccionada
+        if is_banreservas:
+            st.markdown(
+                """
+                <div class="bank-details-box">
+                    <h4 style="color: #38bdf8; margin-top: 0;">📌 DATOS PARA TRANSFERENCIA - BANRESERVAS</h4>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Banco:</strong> Banreservas</p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Tipo de Cuenta:</strong> Cuenta de Ahorros</p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.1rem;">9606561652</span></p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> Argenis</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        elif is_popular:
+            st.markdown(
+                """
+                <div class="bank-details-box">
+                    <h4 style="color: #38bdf8; margin-top: 0;">📌 DATOS PARA TRANSFERENCIA - BANCO POPULAR</h4>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Banco:</strong> Banco Popular</p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Tipo de Cuenta:</strong> Cuenta de Ahorros</p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.1rem;">821794971</span></p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> Argenis</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("<br>", unsafe_allow_html=True)
 
         comprobante_file = st.file_uploader(
             "Subir Comprobante de Pago *", type=["png", "jpg", "jpeg"]
@@ -806,8 +842,8 @@ if st.session_state["chat_abierto"]:
             st.session_state["esperando_telefono_ia"] = False
             st.session_state["respuesta_ia_msg"] = (
                 "**Cuentas bancarias oficiales:**\n\n"
-                "🟣 **Banreservas (Ahorros):** `9606561652`\n"
-                "🔵 **Banco Popular (Ahorros):** `821794971`"
+                "🟣 **Banreservas (Ahorros):** `9606561652` - Titular: Argenis\n"
+                "🔵 **Banco Popular (Ahorros):** `821794971` - Titular: Argenis"
             )
 
     with c_ia2:
@@ -859,27 +895,13 @@ if st.session_state["chat_abierto"]:
                         if r_nom not in rifas_dict:
                             rifas_dict[r_nom] = []
                         rifas_dict[r_nom].append((num, est))
-
-                    st.success(
-                        f"📊 **Resumen de Compra Encontrado ({len(boletos_ia)} boletos en total):**"
-                    )
-                    for r_nom, items in rifas_dict.items():
-                        st.markdown(f"🏆 **Rifa:** `{r_nom}`")
-                        st.markdown(
-                            f"🎟️ **Cantidad de boletos:** `{len(items)}`"
-                        )
-
-                        nums_str = ", ".join([it[0] for it in items])
-                        est_general = (
-                            "✅ Aprobado"
-                            if any(it[1] == "confirmado" for it in items)
-                            else "⏳ Verificándose (Pendiente)"
-                        )
-
-                        st.markdown(f"📌 **Estado:** {est_general}")
-                        st.markdown(f"🔢 **Números:** `{nums_str}`")
-                        st.markdown("---")
+                    
+                    msg = "📋 **Tus boletos registrados:**\n\n"
+                    for r_nom, lista in rifas_dict.items():
+                        msg += f"🔹 **{r_nom}:**\n"
+                        for n, e in lista:
+                            estado_str = "✅ Confirmado" if e == "confirmado" else "⏳ Pendiente"
+                            msg += f"  - Boleto `{n}` ({estado_str})\n"
+                    st.success(msg)
                 else:
-                    st.warning(
-                        "No encontramos boletos registrados con ese número telefónico."
-                    )
+                    st.warning("⚠️ No se encontraron boletos registrados con ese número de teléfono.")
