@@ -122,6 +122,25 @@ st.markdown(
         color: #38bdf8;
         text-align: center;
     }}
+
+    /* Nota Legal Azul Oscuro */
+    .disclaimer-box {{
+        background: #030712;
+        border-left: 4px solid #1d4ed8;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-top: 15px;
+        margin-bottom: 15px;
+    }}
+    .disclaimer-title {{
+        color: #3b82f6;
+        font-weight: bold;
+        font-size: 0.95rem;
+    }}
+    .disclaimer-text {{
+        color: #93c5fd;
+        font-size: 0.88rem;
+    }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -529,13 +548,49 @@ elif st.session_state["vista_actual"] == "rifas":
                 st.rerun()
 
         comprobante_file = st.file_uploader(
-            "Subir Comprobante", type=["png", "jpg", "jpeg"]
+            "Subir Comprobante *", type=["png", "jpg", "jpeg"]
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # CASILLA OBLIGATORIA DE TÉRMINOS Y CONDICIONES
+        acepta_terminos = st.checkbox(
+            "Acepto los términos y condiciones y confirmo que los datos proporcionados (nombre completo, apellido y número de teléfono/WhatsApp) son correctos y verificados. Entiendo que estos datos serán utilizados para la asignación de números y notificaciones de consultas."
+        )
+
+        # NOTA DE RESPONSABILIDAD EN AZUL OSCURO
+        st.markdown(
+            """
+            <div class="disclaimer-box">
+                <div class="disclaimer-title">Rifas Sirio RD</div>
+                <div class="disclaimer-text">No se hace responsable por datos ingresados incorrectamente.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
         if st.button(
             "CONFIRMAR COMPRA ✅", type="primary", use_container_width=True
         ):
-            if nombre_cliente and telefono_cliente and comprobante_file:
+            # VALIDACIÓN DETALLADA CAMPO POR CAMPO
+            faltantes = []
+            if not nombre_cliente.strip():
+                faltantes.append("Nombre Completo")
+            if not telefono_cliente.strip():
+                faltantes.append("Teléfono / WhatsApp")
+            if comprobante_file is None:
+                faltantes.append("Comprobante de Pago")
+            if not acepta_terminos:
+                faltantes.append(
+                    "Aceptar los Términos y Condiciones (marcar la casilla)"
+                )
+
+            if faltantes:
+                st.error(
+                    f"⚠️ **Por favor, completa los siguientes datos para continuar:**\n\n- "
+                    + "\n- ".join(faltantes)
+                )
+            else:
                 conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
                 c.execute(
@@ -557,8 +612,8 @@ elif st.session_state["vista_actual"] == "rifas":
                         c.execute(
                             "UPDATE boletos SET estado = 'reservado', usuario_nombre = ?, usuario_telefono = ?, metodo_pago = ?, comprobante = ?, fecha_reserva = ? WHERE id = ?",
                             (
-                                nombre_cliente,
-                                telefono_cliente,
+                                nombre_cliente.strip(),
+                                telefono_cliente.strip(),
                                 banco_sel,
                                 path_comp,
                                 datetime.datetime.now(),
