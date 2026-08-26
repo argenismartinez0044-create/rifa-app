@@ -654,7 +654,7 @@ elif st.session_state["vista_actual"] == "rifas":
         # Contador de boletos
         c_restar, c_num, c_sumar = st.columns([1, 2, 1])
         with c_restar:
-            if st.button("➖", use_container_width=True):
+            if st.button("➖ Restar", use_container_width=True):
                 if st.session_state["cant_boletos"] > minimo:
                     st.session_state["cant_boletos"] -= 1
                     st.rerun()
@@ -664,7 +664,7 @@ elif st.session_state["vista_actual"] == "rifas":
                 unsafe_allow_html=True,
             )
         with c_sumar:
-            if st.button("➕", use_container_width=True):
+            if st.button("➕ Sumar", use_container_width=True):
                 st.session_state["cant_boletos"] += 1
                 st.rerun()
 
@@ -688,9 +688,7 @@ elif st.session_state["vista_actual"] == "rifas":
         with col_tel:
             telefono_cliente = st.text_input("Teléfono (WhatsApp) *")
 
-        # ---------------------------------------------------------
         # MÉTODO DE PAGO VISUAL (SELECCIÓN PRIVADA)
-        # ---------------------------------------------------------
         st.markdown("### 💳 Selecciona el Método de Pago *")
 
         col_b1, col_b2 = st.columns(2)
@@ -953,103 +951,148 @@ if st.session_state["chat_abierto"]:
         st.rerun()
 
 # ---------------------------------------------------------
-# PANEL DE ADMINISTRACIÓN PRIVADO (SIDEBAR CONFIGURACIÓN)
+# PANEL DE ADMINISTRACIÓN PRIVADO OCULTO VÍA QUERY PARAMETER
 # ---------------------------------------------------------
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("### 🔒 Panel de Administración")
-    admin_clave = st.text_input("Contraseña Admin", type="password")
+query_params = st.query_params
 
-    if admin_clave == "sirio2026":
-        st.success("Acceso concedido al panel de control.")
+# El panel SOLO se renderiza si la URL contiene ?admin=true
+if query_params.get("admin") == "true":
+    with st.sidebar:
         st.markdown("---")
-        st.subheader("📊 Resumen de Boletos")
+        st.markdown("### 🔒 Panel de Administración")
+        admin_clave = st.text_input("Contraseña Admin", type="password")
 
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
+        if admin_clave == "sirio2026":
+            st.success("Acceso concedido al panel de control.")
+            st.markdown("---")
+            st.subheader("📊 Resumen de Boletos")
 
-        c.execute("SELECT id, nombre FROM rifas")
-        rifas_admin = c.fetchall()
-        dict_admin = {r[1]: r[0] for r in rifas_admin}
+            conn = sqlite3.connect(DB_FILE)
+            c = conn.cursor()
 
-        rifa_admin_sel = st.selectbox(
-            "Seleccionar Rifa a Gestionar", list(dict_admin.keys())
-        )
-        r_admin_id = dict_admin[rifa_admin_sel]
+            c.execute("SELECT id, nombre FROM rifas")
+            rifas_admin = c.fetchall()
+            dict_admin = {r[1]: r[0] for r in rifas_admin}
 
-        c.execute(
-            "SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado = 'confirmado'",
-            (r_admin_id,),
-        )
-        total_confirmados = c.fetchone()[0]
+            rifa_admin_sel = st.selectbox(
+                "Seleccionar Rifa a Gestionar", list(dict_admin.keys())
+            )
+            r_admin_id = dict_admin[rifa_admin_sel]
 
-        c.execute(
-            "SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado = 'reservado'",
-            (r_admin_id,),
-        )
-        total_reservados = c.fetchone()[0]
+            c.execute(
+                "SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado = 'confirmado'",
+                (r_admin_id,),
+            )
+            total_confirmados = c.fetchone()[0]
 
-        st.metric("✅ Boletos Confirmados", total_confirmados)
-        st.metric("⏳ Boletos Pendientes", total_reservados)
+            c.execute(
+                "SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado = 'reservado'",
+                (r_admin_id,),
+            )
+            total_reservados = c.fetchone()[0]
 
-        st.markdown("---")
-        st.subheader("📥 Gestión de Comprobantes")
+            st.metric("✅ Boletos Confirmados", total_confirmados)
+            st.metric("⏳ Boletos Pendientes", total_reservados)
 
-        c.execute(
-            """
-            SELECT usuario_telefono, usuario_nombre, metodo_pago, comprobante, COUNT(*) 
-            FROM boletos 
-            WHERE rifa_id = ? AND estado = 'reservado' 
-            GROUP BY usuario_telefono, comprobante
-            """,
-            (r_admin_id,),
-        )
-        pendientes = c.fetchall()
+            st.markdown("---")
+            st.subheader("📥 Gestión de Comprobantes")
 
-        if pendientes:
-            for tel, nom, m_pago, comp_path, cant_b in pendientes:
-                st.markdown(
-                    f"**Cliente:** {nom}\n\n**Tel:** `{tel}` | **Banco:** {m_pago} | **Cantidad:** {cant_b} boletos"
+            c.execute(
+                """
+                SELECT usuario_telefono, usuario_nombre, metodo_pago, comprobante, COUNT(*) 
+                FROM boletos 
+                WHERE rifa_id = ? AND estado = 'reservado' 
+                GROUP BY usuario_telefono, comprobante
+                """,
+                (r_admin_id,),
+            )
+            pendientes = c.fetchall()
+
+            if pendientes:
+                for tel, nom, m_pago, comp_path, cant_b in pendientes:
+                    st.markdown(
+                        f"**Cliente:** {nom}\n\n**Tel:** `{tel}` | **Banco:** {m_pago} | **Cantidad:** {cant_b} boletos"
+                    )
+
+                    if comp_path and os.path.exists(comp_path):
+                        st.image(comp_path, use_container_width=True)
+
+                    col_aprob, col_rech = st.columns(2)
+                    with col_aprob:
+                        if st.button(
+                            f"✅ Aprobar ({tel[:4]}...)",
+                            key=f"aprob_{tel}_{cant_b}",
+                        ):
+                            c.execute(
+                                "UPDATE boletos SET estado = 'confirmado' WHERE rifa_id = ? AND usuario_telefono = ? AND estado = 'reservado'",
+                                (r_admin_id, tel),
+                            )
+                            conn.commit()
+                            st.toast("¡Comprobante aprobado exitosamente!")
+                            st.rerun()
+
+                    with col_rech:
+                        if st.button(
+                            f"❌ Rechazar ({tel[:4]}...)", key=f"rech_{tel}_{cant_b}"
+                        ):
+                            c.execute(
+                                """
+                                UPDATE boletos 
+                                SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, 
+                                    metodo_pago = NULL, comprobante = NULL, comprobante_hash = NULL, fecha_reserva = NULL 
+                                WHERE rifa_id = ? AND usuario_telefono = ? AND estado = 'reservado'
+                                """,
+                                (r_admin_id, tel),
+                            )
+                            conn.commit()
+                            st.toast("Boletos liberados por rechazo de pago.")
+                            st.rerun()
+                    st.markdown("---")
+            else:
+                st.info("No hay comprobantes pendientes por verificar en esta rifa.")
+
+            # SECCIÓN DE RESET DE PRUEBAS PARA ADMINISTRADOR
+            st.markdown("---")
+            st.subheader("🧹 Limpieza de Pruebas / Reset")
+            st.caption("Usa estos botones para dejar la base de datos en cero y reiniciar las pruebas.")
+
+            if st.button(f"🔴 Reiniciar Boletos ({rifa_admin_sel})", use_container_width=True):
+                c.execute(
+                    """
+                    UPDATE boletos 
+                    SET estado = 'disponible', 
+                        usuario_nombre = NULL, 
+                        usuario_telefono = NULL, 
+                        metodo_pago = NULL, 
+                        comprobante = NULL, 
+                        comprobante_hash = NULL, 
+                        fecha_reserva = NULL
+                    WHERE rifa_id = ?
+                    """,
+                    (r_admin_id,),
                 )
+                conn.commit()
+                st.toast(f"¡Se han reiniciado los boletos de {rifa_admin_sel}!", icon="🧹")
+                st.rerun()
 
-                if comp_path and os.path.exists(comp_path):
-                    st.image(comp_path, use_container_width=True)
+            if st.button("⚠️ Reiniciar TODAS las Rifas a 0", use_container_width=True):
+                c.execute(
+                    """
+                    UPDATE boletos 
+                    SET estado = 'disponible', 
+                        usuario_nombre = NULL, 
+                        usuario_telefono = NULL, 
+                        metodo_pago = NULL, 
+                        comprobante = NULL, 
+                        comprobante_hash = NULL, 
+                        fecha_reserva = NULL
+                    """
+                )
+                conn.commit()
+                st.toast("¡Todos los boletos de todas las rifas han vuelto a estar disponibles!", icon="✅")
+                st.rerun()
 
-                col_aprob, col_rech = st.columns(2)
-                with col_aprob:
-                    if st.button(
-                        f"✅ Aprobar ({tel[:4]}...)",
-                        key=f"aprob_{tel}_{cant_b}",
-                    ):
-                        c.execute(
-                            "UPDATE boletos SET estado = 'confirmado' WHERE rifa_id = ? AND usuario_telefono = ? AND estado = 'reservado'",
-                            (r_admin_id, tel),
-                        )
-                        conn.commit()
-                        st.toast("¡Comprobante aprobado exitosamente!")
-                        st.rerun()
-
-                with col_rech:
-                    if st.button(
-                        f"❌ Rechazar ({tel[:4]}...)", key=f"rech_{tel}_{cant_b}"
-                    ):
-                        c.execute(
-                            """
-                            UPDATE boletos 
-                            SET estado = 'disponible', usuario_nombre = NULL, usuario_telefono = NULL, 
-                                metodo_pago = NULL, comprobante = NULL, comprobante_hash = NULL, fecha_reserva = NULL 
-                            WHERE rifa_id = ? AND usuario_telefono = ? AND estado = 'reservado'
-                            """,
-                            (r_admin_id, tel),
-                        )
-                        conn.commit()
-                        st.toast("Boletos liberados por rechazo de pago.")
-                        st.rerun()
-                st.markdown("---")
-        else:
-            st.info("No hay comprobantes pendientes por verificar en esta rifa.")
-
-        conn.close()
+            conn.close()
 
 # ---------------------------------------------------------
 # BOTÓN FLOTANTE DIRECTO DE WHATSAPP Y PIE DE PÁGINA
