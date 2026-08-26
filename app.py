@@ -17,101 +17,151 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# ESTILOS CYBERPUNK / MEJORAS VISUALES (CSS)
+# ESTADO DE TEMA (MODO CLARO / MODO OSCURO)
 # ---------------------------------------------------------
+if "modo_tema" not in st.session_state:
+    st.session_state["modo_tema"] = "oscuro"  # Por defecto oscuro
+
+def cambiar_tema():
+    if st.session_state["modo_tema"] == "oscuro":
+        st.session_state["modo_tema"] = "claro"
+    else:
+        st.session_state["modo_tema"] = "oscuro"
+
+es_oscuro = st.session_state["modo_tema"] == "oscuro"
+
+# Definición de colores según el tema
+bg_app = "linear-gradient(180deg, #090b14 0%, #05060a 100%)" if es_oscuro else "#F8FAFC"
+txt_color = "#FFFFFF" if es_oscuro else "#0F172A"
+card_bg = "#0e1222" if es_oscuro else "#FFFFFF"
+card_border = "#1e293b" if es_oscuro else "#E2E8F0"
+subtxt_color = "#a0aabf" if es_oscuro else "#475569"
+input_bg = "#0e1222" if es_oscuro else "#F1F5F9"
+
 st.markdown(
-    """
+    f"""
     <style>
-    /* Fondo principal cibernético */
-    .stApp {
-        background: linear-gradient(180deg, #090b14 0%, #05060a 100%) !important;
-        color: #FFFFFF;
+    /* Fondo principal cibernético / adaptable */
+    .stApp {{
+        background: {bg_app} !important;
+        color: {txt_color};
         font-family: 'Segoe UI', Roboto, sans-serif;
-    }
+    }}
 
-    /* Ocultar header por defecto y ajustar espaciados */
-    header {visibility: hidden;}
-    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
+    header {{visibility: hidden;}}
+    .block-container {{ padding-top: 1rem; padding-bottom: 2rem; }}
 
-    /* Botón general estilo Neón Cyberpunk */
-    div.stButton > button {
+    /* Botón general */
+    div.stButton > button {{
         background: linear-gradient(90deg, #1b2238 0%, #111525 100%);
         color: #FFFFFF;
         border: 1px solid #00f0ff;
         border-radius: 8px;
         font-weight: bold;
         transition: all 0.3s ease;
-    }
-    div.stButton > button:hover {
+    }}
+    div.stButton > button:hover {{
         border-color: #ff0055;
         box-shadow: 0 0 10px #ff0055;
         color: #ffffff;
-    }
+    }}
 
     /* Botones de Acción / Comprar */
-    .btn-buy-container div.stButton > button {
-        background: linear-gradient(90deg, #ff0055 0%, #831843 100%) !important;
-        border: 1px solid #ff0055 !important;
+    .btn-buy-container div.stButton > button {{
+        background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%) !important;
+        border: 1px solid #f59e0b !important;
         color: #ffffff !important;
         font-size: 1.1rem !important;
+        font-weight: 800 !important;
         border-radius: 10px !important;
-        height: 50px !important;
-    }
-    .btn-buy-container div.stButton > button:hover {
-        box-shadow: 0 0 15px #ff0055 !important;
-    }
+        height: 48px !important;
+    }}
+    .btn-buy-container div.stButton > button:hover {{
+        box-shadow: 0 0 15px #f59e0b !important;
+    }}
 
-    /* Inputs y Selectboxes estilo Neón */
-    .stSelectbox > div > div, .stTextInput > div > div > input {
-        background-color: #0e1222 !important;
+    /* Inputs y Selectboxes */
+    .stSelectbox > div > div, .stTextInput > div > div > input, .stNumberInput > div > div > input {{
+        background-color: {input_bg} !important;
         border: 1px solid #ff0055 !important;
         border-radius: 10px !important;
-        color: #ffffff !important;
-    }
+        color: {txt_color} !important;
+    }}
 
-    /* Tarjeta de Dinámicas / Rifas */
-    .raffle-card {
-        background: #0e1222;
-        border: 1px solid #1e293b;
+    /* --- TARJETA DE DINÁMICA CON HOVER Y BORDE AZUL --- */
+    .raffle-card-wrapper {{
+        position: relative;
+        background: {card_bg};
+        border: 1px solid {card_border};
         border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-    }
+        padding: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }}
 
-    /* Tarjetas de Verificador de Boletos */
-    .ticket-card {
-        background: linear-gradient(135deg, #0e1329 0%, #171d3b 100%);
-        border: 1px solid #1a254b;
+    .raffle-card-wrapper:hover {{
+        transform: translateY(-6px);
+        border-color: #00f0ff !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.4) !important;
+    }}
+
+    /* Badge de Categoría no cliqueable arriba */
+    .category-badge {{
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        background: rgba(15, 23, 42, 0.85);
+        color: #f59e0b;
+        border: 1px solid #f59e0b;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        z-index: 10;
+        pointer-events: none;
+    }}
+
+    /* Frases motivacionales */
+    .motivational-text {{
+        color: {txt_color};
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 10px 0;
+        line-height: 1.4;
+    }}
+
+    .motivational-subtext {{
+        color: #00f0ff;
+        font-size: 0.88rem;
+        font-weight: bold;
+        margin-bottom: 12px;
+    }}
+
+    /* Tarjetas de Verificador */
+    .ticket-card {{
+        background: {card_bg};
+        border: 1px solid {card_border};
         border-radius: 12px;
         padding: 15px;
         text-align: center;
         margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    }
-    .ticket-number {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }}
+    .ticket-number {{
         font-size: 1.8rem;
         font-weight: 900;
         color: #fce205;
         letter-spacing: 2px;
-    }
-    .ticket-user {
-        color: #a0aabf;
+    }}
+    .ticket-user {{
+        color: {subtxt_color};
         font-size: 0.85rem;
-    }
-    .ticket-badge {
-        background-color: #052e16;
-        color: #22c55e;
-        border: 1px solid #15803d;
-        border-radius: 20px;
-        padding: 2px 10px;
-        font-size: 0.75rem;
-        display: inline-block;
-        margin-top: 5px;
-    }
-    
-    /* Indicadores de Paso */
-    .step-pill {
+    }}
+
+    .step-pill {{
         background: #172554;
         color: #60a5fa;
         font-size: 0.8rem;
@@ -120,7 +170,7 @@ st.markdown(
         border-radius: 6px;
         display: inline-block;
         margin-bottom: 8px;
-    }
+    }}
     </style>
 """,
     unsafe_allow_html=True,
@@ -273,7 +323,7 @@ def init_db():
             "INSERT INTO rifas (nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 "PlayStation 5 Pro",
-                "Juego",
+                "JUEGO",
                 5.0,
                 15,
                 100000,
@@ -301,9 +351,9 @@ def init_db():
             )
         conn.commit()
 
-    c.execute("UPDATE rifas SET min_boletos = 15, precio_boleto = 5.0 WHERE id = 1")
+    c.execute("UPDATE rifas SET min_boletos = 15, precio_boleto = 5.0, categoria = 'JUEGO' WHERE id = 1")
     c.execute(
-        "UPDATE rifas SET min_boletos = 10, precio_boleto = 15.0, nombre = '5 iPhone 17 Pro Max' WHERE id = 2"
+        "UPDATE rifas SET min_boletos = 10, precio_boleto = 15.0, nombre = '5 iPhone 17 Pro Max', categoria = 'TELÉFONO' WHERE id = 2"
     )
     conn.commit()
     conn.close()
@@ -330,9 +380,10 @@ init_db()
 liberar_expirados()
 
 # ---------------------------------------------------------
-# BARRA SUPERIOR Y NAVEGACIÓN
+# BARRA SUPERIOR (MODO CLARO / OSCURO + MENÚ)
 # ---------------------------------------------------------
-col_head1, col_head2 = st.columns([4, 1])
+col_head1, col_head2 = st.columns([3, 2], vertical_alignment="center")
+
 with col_head1:
     st.markdown(
         "<h2 style='color:#00f0ff; margin:0;'>SIRIO<span style='color:#ff0055;'>RIFAS</span> RD</h2>",
@@ -340,20 +391,27 @@ with col_head1:
     )
 
 with col_head2:
-    with st.popover("☰ MENÚ", use_container_width=True):
-        st.markdown("### 🎯 Navegación")
-        seccion_menu = st.radio(
-            "Selecciona una opción:",
-            [
-                "🏠 Inicio & Catálogo",
-                "🔎 Verificador de boletos",
-                "❓ Cómo jugar",
-                "🤖 Soporte IA",
-                "🏆 Ganadores",
-                "⚙️ Administración",
-            ],
-            label_visibility="collapsed",
-        )
+    c_btn_theme, c_btn_menu = st.columns([1, 2])
+    
+    with c_btn_theme:
+        icono_tema = "☀️" if es_oscuro else "🌙"
+        st.button(icono_tema, on_click=cambiar_tema, key="btn_theme_toggle", help="Cambiar Modo Claro/Oscuro", use_container_width=True)
+
+    with c_btn_menu:
+        with st.popover("☰ MENÚ", use_container_width=True):
+            st.markdown("### 🎯 Navegación")
+            seccion_menu = st.radio(
+                "Selecciona una opción:",
+                [
+                    "🏠 Inicio & Catálogo",
+                    "🔎 Verificador de boletos",
+                    "❓ Cómo jugar",
+                    "🤖 Soporte IA",
+                    "🏆 Ganadores",
+                    "⚙️ Administración",
+                ],
+                label_visibility="collapsed",
+            )
 
 if "seccion_activa" not in st.session_state:
     st.session_state["seccion_activa"] = "🏠 Inicio & Catálogo"
@@ -369,21 +427,21 @@ st.markdown("---")
 # SECCIÓN: INICIO Y CATÁLOGO
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
-    col_logo, col_titulo = st.columns([1, 2])
+    col_logo, col_titulo = st.columns([1, 2], vertical_alignment="center")
     with col_logo:
         if os.path.exists("logo.png"):
-            st.image("logo.png", width=220)
+            st.image("logo.png", width=180)
     with col_titulo:
         st.markdown(
             "<p style='color: #F5C518; font-weight: bold; margin-bottom: 0;'>Plataforma Exclusiva de Rifas</p>",
             unsafe_allow_html=True,
         )
         st.markdown(
-            "<h1 style='color: #FFFFFF; font-size: 2.2rem; margin-top: 0;'>Premios Exclusivos Garantizados</h1>",
+            f"<h1 style='color: {txt_color}; font-size: 2rem; margin-top: 0;'>CATÁLOGO DE RIFAS</h1>",
             unsafe_allow_html=True,
         )
 
-    # Cargar rifas de la base de datos
+    # Cargar las 2 dinámicas
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute(
@@ -391,7 +449,9 @@ if seccion == "🏠 Inicio & Catálogo":
     )
     rifas_list = c.fetchall()
 
-    for r in rifas_list:
+    cols_dinamicas = st.columns(len(rifas_list))
+
+    for idx, r in enumerate(rifas_list):
         r_id, r_nombre, r_cat, r_precio, r_min, r_tot, r_img, r_fecha = r
 
         c.execute(
@@ -401,33 +461,50 @@ if seccion == "🏠 Inicio & Catálogo":
         vendidos = c.fetchone()[0]
         progreso = round((vendidos / r_tot) * 100, 2)
 
-        with st.container():
+        # Frases motivacionales personalizadas por dinámica
+        if "iPhone" in r_nombre:
+            frase_motivacional = "Por tan solo $15 pesos participas por 5 iPhone 17 Pro Max 📱🔥"
+            subfrase_motivacional = "¡Cualquiera de esos 5 puede ser tuyo! 🤩"
+        else:
+            frase_motivacional = "Por tan solo $5 pesitos participas por una PlayStation 5 Pro 🎮🔥"
+            subfrase_motivacional = "¡Llévatela a casa hoy mismo! 🥳"
+
+        with cols_dinamicas[idx]:
+            # Contenedor principal con efecto HOVER cibernético y borde azul
             st.markdown(
                 f"""
-                <div class="raffle-card">
-                    <h2 style="color:#ffffff; margin-top:0; font-size:1.5rem;">{r_nombre}</h2>
-                    <p style="color:#ff0055; font-weight:bold; margin-bottom:5px;">📅 Sorteo: {r_fecha}</p>
-                    <p style="color:#00f0ff; font-weight:bold; font-size:0.9rem; margin-top:0;">PROGRESO: {progreso}%</p>
-                </div>
+                <div class="raffle-card-wrapper">
+                    <div class="category-badge">{r_cat}</div>
                 """,
                 unsafe_allow_html=True,
             )
 
+            # Imagen de la Rifa
             if r_img and os.path.exists(r_img):
                 st.image(r_img, use_container_width=True)
 
+            # Título y Frases motivacionales
+            st.markdown(
+                f"""
+                <h3 style="color:#ffffff if {es_oscuro} else #0f172a; margin-top:10px; margin-bottom:5px; font-weight:800;">{r_nombre}</h3>
+                <p class="motivational-text">{frase_motivacional}</p>
+                <p class="motivational-subtext">{subfrase_motivacional}</p>
+                <p style="color:#00f0ff; font-size:0.8rem; font-weight:bold; margin-bottom:2px;">PROGRESO: {progreso}%</p>
+                """,
+                unsafe_allow_html=True,
+            )
+
             st.progress(progreso / 100)
 
-            # --- PRECIO AL LADO DEL BOTÓN DE COMPRA ---
-            col_precio, col_boton = st.columns([1.2, 1], vertical_alignment="center")
+            # Precio, Mínimo y Botón JUGAR en la misma fila
+            col_precio, col_boton = st.columns([1.1, 1], vertical_alignment="center")
 
             with col_precio:
                 st.markdown(
                     f"""
-                    <div style="padding-left: 5px;">
-                        <span style="color:#a0aabf; font-size:0.8rem; display:block;">PRECIO POR BOLETO</span>
-                        <span style="color:#ffffff; font-size:1.6rem; font-weight:900;">RD$ {r_precio:,.2f}</span>
-                        <span style="color:#00f0ff; font-size:0.8rem; display:block;">Mínimo: {r_min} boletos</span>
+                    <div>
+                        <span style="color:#00f0ff; font-size:1.5rem; font-weight:900;">RD$ {r_precio:,.2f}</span><br/>
+                        <span style="color:{subtxt_color}; font-size:0.75rem;">Min {r_min} boletos</span>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -435,9 +512,6 @@ if seccion == "🏠 Inicio & Catálogo":
 
             with col_boton:
                 st.markdown('<div class="btn-buy-container">', unsafe_allow_html=True)
-                label_btn = (
-                    f"🎮 JUGAR" if "PlayStation" in r_nombre else f"📱 PARTICIPAR"
-                )
 
                 def seleccionar_rifa(
                     rifa_id=r_id,
@@ -450,22 +524,24 @@ if seccion == "🏠 Inicio & Catálogo":
                     st.session_state["precio_rifa"] = precio
                     st.session_state["min_rifa"] = minimo
                     st.session_state["paso_compra"] = 1
+                    st.session_state["modo_paquete"] = "PAQUETES"
                     st.session_state["cant_boletos"] = minimo
 
                 st.button(
-                    label_btn,
+                    "JUGAR",
                     key=f"btn_jugar_{r_id}",
                     on_click=seleccionar_rifa,
                     use_container_width=True,
                 )
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            # Cierre de la tarjeta
+            st.markdown("</div>", unsafe_allow_html=True)
 
     conn.close()
 
     # ---------------------------------------------------------
-    # FLUJO DE COMPRA PASO A PASO (CON COMBOS ORIGINALES)
+    # FLUJO DE COMPRA: SELECCIÓN DE PAQUETES O CANTIDAD LIBRE
     # ---------------------------------------------------------
     if "rifa_seleccionada" in st.session_state:
         st.markdown("---")
@@ -480,61 +556,80 @@ if seccion == "🏠 Inicio & Catálogo":
             <div style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
                         border-radius: 16px; padding: 20px; text-align: center;">
                 <span style="background-color: #F5C518; color: #000; font-weight: 800;
-                             padding: 4px 12px; border-radius: 20px;">Rifa seleccionada</span>
+                             padding: 4px 12px; border-radius: 20px;">COMPLETA TU COMPRA</span>
                 <h2 style="color: #FFFFFF; margin: 10px 0;">🎉 {nombre} 🎉</h2>
                 <p style="color: #E0E0E0; margin: 0;">
-                    Precio por boleto:
-                    <strong style="color: #F5C518;">RD$ {precio:.2f}</strong>
+                    Precio unitario: <strong style="color: #F5C518;">RD$ {precio:.2f}</strong>
                 </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # PASO 1: Datos del participante + Selección interactiva de combos
+        # PASO 1: Selección PAQUETES vs CANTIDAD LIBRE + Datos
         if paso == 1:
-            st.subheader("📝 1. Completa tus datos y selecciona tu combo")
+            st.subheader("🎟️ 1. ¿Cómo quieres participar?")
 
-            if "cant_boletos" not in st.session_state:
-                st.session_state["cant_boletos"] = minimo
+            col_modo1, col_modo2 = st.columns(2)
+            with col_modo1:
+                if st.button("📦 PAQUETES (COMBOS)", use_container_width=True, type="primary" if st.session_state.get("modo_paquete") == "PAQUETES" else "secondary"):
+                    st.session_state["modo_paquete"] = "PAQUETES"
+                    st.rerun()
+            with col_modo2:
+                if st.button("🔢 CANTIDAD LIBRE", use_container_width=True, type="primary" if st.session_state.get("modo_paquete") == "LIBRE" else "secondary"):
+                    st.session_state["modo_paquete"] = "LIBRE"
+                    st.rerun()
 
-            st.markdown("### 💥 SELECCIÓN DE COMBOS DE BOLETOS")
-            st.caption("Haz clic en un combo para seleccionarlo:")
+            st.markdown("<br>", unsafe_allow_html=True)
 
-            combos_def = [
-                ("🟢 COMBO BÁSICO", minimo),
-                ("🔵 COMBO DOBLE", minimo * 2),
-                ("🟣 COMBO INTERMEDIO", minimo * 3),
-                ("🟠 COMBO PROFESIONAL", minimo * 5),
-                ("🔴 COMBO PRO VIP", minimo * 10),
-            ]
+            if st.session_state.get("modo_paquete") == "PAQUETES":
+                st.caption("Selecciona uno de nuestros paquetes preferidos:")
 
-            c_cols = st.columns(len(combos_def))
-            for i, (nombre_combo, cant_combo) in enumerate(combos_def):
-                cant_combo = min(100, cant_combo)
-                costo_combo = cant_combo * precio
-                with c_cols[i]:
-                    st.markdown(
-                        f"""
-                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 8px;">
-                            <strong>{nombre_combo}</strong><br/>
-                            <span style="color: #F5C518;">🎟️ {cant_combo} boletos</span><br/>
-                            <small>RD$ {costo_combo:.2f}</small>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                    if st.button(
-                        f"Seleccionar",
-                        key=f"btn_set_combo_{i}",
-                        use_container_width=True,
-                    ):
-                        st.session_state["cant_boletos"] = cant_combo
-                        st.rerun()
+                combos_def = [
+                    (f"{minimo} BOLETOS", minimo),
+                    (f"{minimo * 2} BOLETOS", minimo * 2),
+                    (f"{minimo * 3} BOLETOS", minimo * 3),
+                    (f"{minimo * 5} BOLETOS", minimo * 5),
+                    (f"{minimo * 10} BOLETOS", minimo * 10),
+                ]
+
+                c_cols = st.columns(len(combos_def))
+                for i, (nombre_combo, cant_combo) in enumerate(combos_def):
+                    cant_combo = min(100, cant_combo)
+                    costo_combo = cant_combo * precio
+                    with c_cols[i]:
+                        st.markdown(
+                            f"""
+                            <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid #00f0ff; padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 8px;">
+                                <strong style="color:#00f0ff;">🎟️ {cant_combo}</strong><br/>
+                                <small style="color:{txt_color}; font-size:0.75rem;">BOLETOS</small><br/>
+                                <span style="color:#f59e0b; font-weight:800;">RD$ {costo_combo:,.2f}</span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                        if st.button(
+                            "SELECCIONAR",
+                            key=f"btn_set_combo_{i}",
+                            use_container_width=True,
+                        ):
+                            st.session_state["cant_boletos"] = cant_combo
+                            st.rerun()
+            else:
+                st.caption("Ingresa manualmente el número de boletos que deseas comprar:")
+                cant_libre = st.number_input(
+                    "Cantidad de boletos:",
+                    min_value=minimo,
+                    max_value=500,
+                    value=int(st.session_state.get("cant_boletos", minimo)),
+                    step=1,
+                )
+                st.session_state["cant_boletos"] = cant_libre
 
             st.markdown("---")
 
             with st.form("form_datos_cliente"):
+                st.markdown("### 👤 Tus Datos de Contacto")
                 nombre_cliente = st.text_input(
                     "Nombre Completo",
                     value=st.session_state.get("nombre_cliente", ""),
@@ -544,17 +639,10 @@ if seccion == "🏠 Inicio & Catálogo":
                     value=st.session_state.get("telefono_cliente", ""),
                 )
 
-                cant_boletos_input = st.number_input(
-                    "✏️ Boletos seleccionados (puedes ajustar el número manualmente):",
-                    min_value=minimo,
-                    max_value=100,
-                    value=int(st.session_state["cant_boletos"]),
-                    step=1,
-                )
-
-                total_pagar = cant_boletos_input * precio
+                total_pagar = st.session_state["cant_boletos"] * precio
                 st.markdown(
-                    f"### 💰 Total a pagar: **{int(cant_boletos_input)} boletos** × RD$ {precio:.2f} = **RD$ {total_pagar:.2f}**"
+                    f"### 💰 Total a pagar: **{int(st.session_state['cant_boletos'])} boletos** × RD$ {precio:.2f} = <span style='color:#f59e0b;'>RD$ {total_pagar:,.2f}</span>",
+                    unsafe_allow_html=True
                 )
 
                 continuar_datos = st.form_submit_button(
@@ -567,16 +655,11 @@ if seccion == "🏠 Inicio & Catálogo":
                     st.error("Por favor completa tu nombre y teléfono/WhatsApp.")
                 else:
                     st.session_state["nombre_cliente"] = nombre_cliente.strip()
-                    st.session_state["telefono_cliente"] = (
-                        telefono_cliente.strip()
-                    )
-                    st.session_state["cant_boletos"] = int(
-                        cant_boletos_input
-                    )
+                    st.session_state["telefono_cliente"] = telefono_cliente.strip()
                     st.session_state["paso_compra"] = 2
                     st.rerun()
 
-        # PASO 2: Banco, imágenes y número de cuenta
+        # PASO 2: Banco, cuentas e imagen
         elif paso == 2:
             st.subheader("💳 2. Selecciona el banco para realizar el depósito")
 
@@ -638,13 +721,13 @@ if seccion == "🏠 Inicio & Catálogo":
                 st.image(img_banco, width=200)
 
             total_pagar = st.session_state["cant_boletos"] * precio
-            st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:.2f}**")
+            st.markdown(f"### 💰 Total a pagar: **RD$ {total_pagar:,.2f}**")
             st.info("Realiza el depósito y luego sube la foto del volante/comprobante.")
 
             col1, col2 = st.columns(2)
             with col1:
                 if st.button(
-                    "⬅️ VOLVER A DATOS Y COMBOS",
+                    "⬅️ VOLVER A SELECCIÓN",
                     key="volver_datos",
                     use_container_width=True,
                 ):
@@ -667,7 +750,7 @@ if seccion == "🏠 Inicio & Catálogo":
             banco_sel = st.session_state.get("banco_pago", "Banco Seleccionado")
             st.info(
                 f"Banco seleccionado: **{banco_sel}** · "
-                f"Total a pagar: **RD$ {st.session_state['cant_boletos'] * precio:.2f}**"
+                f"Total a pagar: **RD$ {st.session_state['cant_boletos'] * precio:,.2f}**"
             )
 
             comprobante_file = st.file_uploader(
@@ -716,9 +799,7 @@ if seccion == "🏠 Inicio & Catálogo":
                         asignados = random.sample(disp, cant_boletos)
                         os.makedirs("comprobantes", exist_ok=True)
 
-                        extension = os.path.splitext(comprobante_file.name)[
-                            1
-                        ].lower()
+                        extension = os.path.splitext(comprobante_file.name)[1].lower()
                         if extension not in [".png", ".jpg", ".jpeg"]:
                             extension = ".png"
 
@@ -729,9 +810,7 @@ if seccion == "🏠 Inicio & Catálogo":
 
                         imagen_comprobante = Image.open(comprobante_file)
                         if imagen_comprobante.mode in ("RGBA", "LA", "P"):
-                            imagen_comprobante = imagen_comprobante.convert(
-                                "RGB"
-                            )
+                            imagen_comprobante = imagen_comprobante.convert("RGB")
                         imagen_comprobante.save(path_comp)
 
                         ahora = datetime.datetime.now()
@@ -784,11 +863,10 @@ if seccion == "🏠 Inicio & Catálogo":
 # ---------------------------------------------------------
 elif seccion == "🔎 Verificador de boletos":
     st.markdown(
-        """
+        f"""
         <div style="text-align: center;">
-            <h1 style="color: #ffffff; font-weight: 900; letter-spacing: 2px;">🔎 VERIFICADOR</h1>
-            <h3 style="color: #ff0055; margin-top: -15px; font-weight: 700;">DE NÚMEROS</h3>
-            <p style="color: #a0aabf; font-size: 0.9rem;">Ingresa tu número de teléfono o tu número asignado para consultar tus participaciones</p>
+            <h1 style="color: {txt_color}; font-weight: 900; letter-spacing: 2px;">🔎 VERIFICADOR DE BOLETOS</h1>
+            <p style="color: {subtxt_color}; font-size: 0.9rem;">Ingresa tu número de teléfono o tu número asignado para consultar tus participaciones</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -823,7 +901,7 @@ elif seccion == "🔎 Verificador de boletos":
     )
 
     btn_buscar = st.button(
-        "🔍 BUSCAR", use_container_width=True, type="primary"
+        "🔍 BUSCAR BOLETOS", use_container_width=True, type="primary"
     )
 
     if btn_buscar:
@@ -871,11 +949,11 @@ elif seccion == "🔎 Verificador de boletos":
                         st.markdown(
                             f"""
                             <div class="ticket-card">
-                                <small style="color:#64748b;">{rifa_seleccionada_nom[:18]}...</small>
+                                <small style="color:{subtxt_color};">{rifa_seleccionada_nom}</small>
                                 <div class="ticket-number">{num}</div>
                                 <div class="ticket-user">👤 {nom_censurado}</div>
                                 <div class="ticket-user">📞 {tel_censurado}</div>
-                                <div class="ticket-badge">● {est.upper()}</div>
+                                <div class="step-pill" style="margin-top:8px;">● {est.upper()}</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
@@ -887,7 +965,7 @@ elif seccion == "🔎 Verificador de boletos":
 elif seccion == "❓ Cómo jugar":
     st.header("❓ Cómo Participar")
     st.markdown(
-        "1. Selecciona tu premio.\n2. Compra tus boletos.\n3. Transfiere por banco.\n4. Sube la foto del comprobante.\n5. Verifica tus números."
+        "1. Selecciona tu premio deseado en el catálogo.\n2. Compra tus boletos seleccionando un paquete o eligiendo una cantidad libre.\n3. Transfiere el monto total a Banreservas o Banco Popular.\n4. Sube la foto del comprobante.\n5. ¡Listo! Puedes verificar tus números en el buscador."
     )
 
 elif seccion == "🤖 Soporte IA":
@@ -895,11 +973,11 @@ elif seccion == "🤖 Soporte IA":
 
 elif seccion == "🏆 Ganadores":
     st.header("🏆 Ganadores Anteriores")
-    st.info("Próximamente publicaremos aquí los ganadores oficiales.")
+    st.info("Próximamente publicaremos aquí los ganadores oficiales de nuestras dinámicas.")
 
 elif seccion == "⚙️ Administración":
-    st.header("⚙️ Administración")
-    pass_admin = st.text_input("Contraseña", type="password")
+    st.header("⚙️ Panel de Administración")
+    pass_admin = st.text_input("Contraseña Administrador", type="password")
 
     if pass_admin == "admin123":
         conn = sqlite3.connect(DB_FILE)
