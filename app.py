@@ -30,7 +30,6 @@ def cambiar_tema():
 
 es_oscuro = st.session_state["modo_tema"] == "oscuro"
 
-# Definición de colores
 bg_app = "linear-gradient(180deg, #090b14 0%, #05060a 100%)" if es_oscuro else "#F8FAFC"
 txt_color = "#FFFFFF" if es_oscuro else "#0F172A"
 card_bg = "#0e1222" if es_oscuro else "#FFFFFF"
@@ -40,7 +39,6 @@ subtxt_color = "#a0aabf" if es_oscuro else "#475569"
 st.markdown(
     f"""
     <style>
-    /* Fondo principal cibernético */
     .stApp {{
         background: {bg_app} !important;
         color: {txt_color};
@@ -65,7 +63,7 @@ st.markdown(
         color: #ffffff;
     }}
 
-    /* Botones de Acción / Jugar */
+    /* Botón JUGAR principal */
     .btn-buy-container div.stButton > button {{
         background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%) !important;
         border: 1px solid #f59e0b !important;
@@ -79,7 +77,7 @@ st.markdown(
         box-shadow: 0 0 15px #f59e0b !important;
     }}
 
-    /* --- TARJETA DE LA DINÁMICA DE JUEGO --- */
+    /* TARJETA CATÁLOGO */
     .raffle-card-wrapper {{
         position: relative;
         background: {card_bg};
@@ -88,14 +86,12 @@ st.markdown(
         padding: 16px;
         margin-bottom: 20px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        overflow: hidden;
+        transition: all 0.3s ease;
     }}
-
     .raffle-card-wrapper:hover {{
         transform: translateY(-6px);
         border-color: #00f0ff !important;
-        box-shadow: 0 0 20px rgba(0, 240, 255, 0.6), inset 0 0 10px rgba(0, 240, 255, 0.2) !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.6) !important;
     }}
 
     .image-container-relative {{
@@ -106,7 +102,6 @@ st.markdown(
         margin-bottom: 12px;
     }}
 
-    /* Badge de Categoría dentro de la Imagen */
     .category-badge-overlay {{
         position: absolute;
         top: 12px;
@@ -122,11 +117,9 @@ st.markdown(
         letter-spacing: 1.5px;
         text-transform: uppercase;
         z-index: 10;
-        pointer-events: none;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }}
 
-    /* ESTILOS DE LA VENTANA DE COMPRA ESTILO FUTURISTA */
+    /* CONTADOR FUTURISTA */
     .counter-box {{
         background: #020617;
         border: 2px solid #1e293b;
@@ -134,7 +127,6 @@ st.markdown(
         padding: 15px;
         text-align: center;
     }}
-
     .counter-display {{
         font-size: 2.5rem;
         font-weight: 900;
@@ -152,23 +144,18 @@ st.markdown(
         font-size: 0.85rem;
     }}
 
-    /* BANCOS ESTILO RETRO / FUTURISTA */
-    .bank-card-selectable {{
-        background: #0e1222;
-        border: 1.5px solid #1e293b;
+    /* SECCIÓN DE BANCOS ESTILO TARJETA (IMAGEN 3) */
+    .bank-card-container {{
+        background: #0b1120;
+        border: 1px solid #1e293b;
         border-radius: 12px;
-        padding: 10px;
+        padding: 12px;
         text-align: center;
-        cursor: pointer;
         transition: all 0.2s ease;
     }}
-
-    .bank-card-selected {{
-        background: #111827 !important;
-        border: 2px solid #00f0ff !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.4) !important;
+    .bank-card-container:hover {{
+        border-color: #00f0ff;
     }}
-
     .bank-info-panel {{
         background: #090d16;
         border: 1.5px solid #00f0ff;
@@ -178,19 +165,55 @@ st.markdown(
         margin-bottom: 15px;
     }}
 
-    /* Verificador Ticket */
-    .ticket-card {{
-        background: {card_bg};
-        border: 1px solid {card_border};
-        border-radius: 12px;
+    /* ESTILO CAJA TÉRMINOS Y CONDICIONES (IMAGEN 2) */
+    .terms-card-box {{
+        background: #060a14;
+        border: 1px solid #1e293b;
+        border-radius: 10px;
         padding: 15px;
-        text-align: center;
+        margin-top: 15px;
         margin-bottom: 15px;
+        color: #94a3b8;
+        font-size: 0.88rem;
     }}
-    .ticket-number {{
-        font-size: 1.8rem;
+
+    /* BARRA INFERIOR DE TOTAL Y BOTÓN DE CONFIRMAR COMPRA (IMAGEN 1) */
+    .total-checkout-bar {{
+        background: #070a14;
+        border: 1.5px solid #1e293b;
+        border-radius: 14px;
+        padding: 16px 24px;
+        margin-top: 15px;
+    }}
+    .total-title-text {{
+        font-size: 0.75rem;
+        color: #94a3b8;
+        letter-spacing: 1.5px;
+        font-weight: bold;
+    }}
+    .total-amount-display {{
+        font-size: 2.2rem;
         font-weight: 900;
-        color: #fce205;
+        color: #00f0ff;
+        font-family: monospace;
+        letter-spacing: 1px;
+    }}
+
+    /* Botón estilizado rojo/azul cibernético (Imagen 1) */
+    .btn-confirm-purchase div.stButton > button {{
+        background: linear-gradient(90deg, #3b82f6 0%, #ef4444 100%) !important;
+        border: none !important;
+        color: #FFFFFF !important;
+        font-size: 1.2rem !important;
+        font-weight: 900 !important;
+        border-radius: 12px !important;
+        height: 56px !important;
+        letter-spacing: 1px !important;
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+    }}
+    .btn-confirm-purchase div.stButton > button:hover {{
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.8) !important;
+        transform: scale(1.02);
     }}
     </style>
 """,
@@ -199,7 +222,7 @@ st.markdown(
 
 
 # ---------------------------------------------------------
-# DIÁLOGO DE SOPORTE IA
+# ASISTENTE DE SOPORTE IA
 # ---------------------------------------------------------
 @st.dialog("🤖 Asistente Virtual - Rifas Sirio RD")
 def abrir_soporte_ia():
@@ -241,7 +264,7 @@ def abrir_soporte_ia():
         mostrar_wa = False
 
         if any(w in txt for w in ["jugar", "participar", "funciona", "pasos"]):
-            resp = "1. Selecciona tu juego.\n2. Selecciona la cantidad de boletos.\n3. Selecciona tu banco e ingresa el comprobante."
+            resp = "1. Selecciona tu juego.\n2. Elige tus números o un combo especial.\n3. Selecciona tu banco y sube el comprobante."
         elif any(w in txt for w in ["pago", "banco", "transferencia"]):
             resp = "Aceptamos Banreservas, Banco Popular, BHD y Banco Santa Cruz."
         elif any(w in txt for w in ["verificar", "consultar", "mi boleto"]):
@@ -261,7 +284,7 @@ def abrir_soporte_ia():
 
 
 # ---------------------------------------------------------
-# DIÁLOGO DE PROCESO DE COMPRA (INTERFAZ DE 2DA Y 3RA FOTO)
+# MODAL/VENTANA DE COMPRA
 # ---------------------------------------------------------
 @st.dialog("🛒 COMPLETAR COMPRA DE NÚMEROS", width="large")
 def ventana_compra_dialogo():
@@ -283,9 +306,26 @@ def ventana_compra_dialogo():
     if "cant_boletos_dialog" not in st.session_state:
         st.session_state["cant_boletos_dialog"] = int(r_min)
 
-    # 1. CONTADOR DE CANTIDAD DE NÚMEROS (+ / -)
-    st.markdown("### 🎫 CANTIDAD DE NÚMEROS")
+    # 1. COMBOS RÁPIDOS (RESTAURADOS)
+    st.markdown("### 🔥 COMBOS POPULARES")
+    c_cb1, c_cb2, c_cb3, c_cb4 = st.columns(4)
+    if c_cb1.button("🎟️ 50 Boletos", key="combo_50", use_container_width=True):
+        st.session_state["cant_boletos_dialog"] = 50
+        st.rerun()
+    if c_cb2.button("💥 100 Boletos", key="combo_100", use_container_width=True):
+        st.session_state["cant_boletos_dialog"] = 100
+        st.rerun()
+    if c_cb3.button("⚡ 250 Boletos", key="combo_250", use_container_width=True):
+        st.session_state["cant_boletos_dialog"] = 250
+        st.rerun()
+    if c_cb4.button("👑 500 Boletos", key="combo_500", use_container_width=True):
+        st.session_state["cant_boletos_dialog"] = 500
+        st.rerun()
 
+    st.markdown("---")
+
+    # 2. CONTADOR DE CANTIDAD (+ / -)
+    st.markdown("### 🎫 CANTIDAD MANUAL DE NÚMEROS")
     col_dec, col_dis, col_inc = st.columns([1, 2, 1], vertical_alignment="center")
 
     with col_dec:
@@ -310,11 +350,10 @@ def ventana_compra_dialogo():
             st.rerun()
 
     st.markdown(
-        f"<p style='text-align:center; color:#f59e0b; font-weight:bold; margin-top:5px;'>Compra mínima: {r_min} números</p>",
+        f"<p style='text-align:center; color:#f59e0b; font-weight:bold; margin-top:5px;'>Mínimo de compra: {r_min} números</p>",
         unsafe_allow_html=True,
     )
 
-    # Mensaje Informativo exacto
     st.markdown(
         """
         <div class="info-callout-box">
@@ -326,8 +365,8 @@ def ventana_compra_dialogo():
 
     st.markdown("---")
 
-    # DATOS DEL CLIENTE
-    st.markdown("### 👤 TUS DATOS DE CONTACTO")
+    # 3. DATOS DEL CLIENTE
+    st.markdown("### 👤 DATOS DEL COMPRADOR")
     c_nom, c_tel = st.columns(2)
     with c_nom:
         nombre_u = st.text_input("Nombre Completo *", placeholder="Ej: Juan Pérez", key="input_dialog_nom")
@@ -336,29 +375,33 @@ def ventana_compra_dialogo():
 
     st.markdown("---")
 
-    # 2. SELECCIÓN DE MÉTODO DE PAGO / BANCO (CON IMÁGENES/BOTONES)
-    st.markdown("### 💳 MÉTODO DE PAGO *")
+    # 4. MÉTODO DE PAGO / SELECCIÓN DE BANCOS CON IMÁGENES/PEQUEÑOS BOTONES (IMAGEN 3)
+    st.markdown("### 💳 Método de Pago *")
 
     bancos_info = {
-        "Banreservas": {
+        "RESERVAS (AHORRO) 🟣": {
+            "nombre_banco": "Banco Banreservas",
             "titular": "ARGENIS MARTINEZ C.",
-            "cuenta": "9606561652",
+            "cuenta": "9601468228",
             "tipo": "Ahorros",
             "img": "banreservas.png",
         },
-        "Banco Popular": {
+        "POPULAR (CORRIENTE) 🔵": {
+            "nombre_banco": "Banco Popular",
             "titular": "ARGENIS MARTINEZ",
             "cuenta": "821794971",
-            "tipo": "Ahorros",
+            "tipo": "Corriente",
             "img": "popular.png",
         },
-        "BHD": {
+        "BHD (AHORRO) 🟢": {
+            "nombre_banco": "Banco BHD",
             "titular": "ARGENIS MARTINEZ",
             "cuenta": "1098273645",
             "tipo": "Ahorros",
             "img": "bhd.png",
         },
-        "Banco Santa Cruz": {
+        "BANCO SANTA CRUZ (AHORRO) 🔵": {
+            "nombre_banco": "Banco Santa Cruz",
             "titular": "ARGENIS MARTINEZ",
             "cuenta": "4029182736",
             "tipo": "Ahorros",
@@ -369,31 +412,32 @@ def ventana_compra_dialogo():
     if "banco_seleccionado_dialog" not in st.session_state:
         st.session_state["banco_seleccionado_dialog"] = None
 
+    # Muestra de las Tarjetas/Botones Pequeños de Bancos
     cols_bancos = st.columns(4)
-    for i, (b_name, b_data) in enumerate(bancos_info.items()):
-        es_sel = st.session_state["banco_seleccionado_dialog"] == b_name
-        
+    for i, (b_key, b_data) in enumerate(bancos_info.items()):
+        es_sel = st.session_state["banco_seleccionado_dialog"] == b_key
         with cols_bancos[i]:
-            # Botón estilizado para seleccionar el banco
-            lbl = f"✅ {b_name}" if es_sel else f"🏦 {b_name}"
-            if st.button(lbl, key=f"btn_sel_banco_{i}", use_container_width=True, type="primary" if es_sel else "secondary"):
-                st.session_state["banco_seleccionado_dialog"] = b_name
+            if os.path.exists(b_data["img"]):
+                st.image(b_data["img"], width=50)
+            
+            lbl_btn = f"✓ {b_key}" if es_sel else b_key
+            if st.button(lbl_btn, key=f"btn_sel_banco_{i}", use_container_width=True, type="primary" if es_sel else "secondary"):
+                st.session_state["banco_seleccionado_dialog"] = b_key
                 st.rerun()
 
-    # Si NO ha seleccionado ningún banco, NO se muestra la información
-    banco_activo = st.session_state["banco_seleccionado_dialog"]
+    # DESPLIEGUE DINÁMICO DE INFORMACIÓN BANCARIA (SOLO SI SE SELECCIONA UN BANCO)
+    banco_activo_key = st.session_state["banco_seleccionado_dialog"]
 
-    if banco_activo:
-        info_b = bancos_info[banco_activo]
-
+    if banco_activo_key:
+        info_b = bancos_info[banco_activo_key]
         st.markdown(
             f"""
             <div class="bank-info-panel">
-                <h4 style="color:#00f0ff; margin-top:0;">🏦 {banco_activo.upper()} ({info_b['tipo'].upper()})</h4>
-                <p style="margin-bottom: 4px;">Tipo: <strong>{info_b['tipo']}</strong></p>
-                <p style="margin-bottom: 4px;">Titular: <strong>{info_b['titular']}</strong></p>
-                <p style="margin-bottom: 4px;">Número de cuenta:</p>
-                <h2 style="color:#ffffff; margin:5px 0; letter-spacing:2px;">{info_b['cuenta']}</h2>
+                <h4 style="color:#00f0ff; margin-top:0;">🏦 {banco_activo_key}</h4>
+                <p style="margin-bottom: 2px; color:#94a3b8; font-size:0.9rem;">Número de cuenta:</p>
+                <h2 style="color:#ffffff; margin:2px 0; font-family:monospace; letter-spacing:2px;">{info_b['cuenta']}</h2>
+                <p style="margin-top: 8px; margin-bottom: 0px;">Titular: <strong>{info_b['titular']}</strong></p>
+                <small style="color:#64748b;">Realiza la transferencia y sube el comprobante abajo para validar tu compra.</small>
             </div>
             """,
             unsafe_allow_html=True,
@@ -407,36 +451,80 @@ def ventana_compra_dialogo():
         }})" 
         style="width:100%; padding:14px; border:0; border-radius:8px; 
                background:#FFD700; color:#000; font-weight:900; cursor:pointer; font-size: 1rem; margin-bottom:15px;">
-            📋 COPIAR NÚMERO DE CUENTA ({info_b['cuenta']})
+            📋 COPIAR
         </button>
         """
         components.html(html_copiar, height=55)
 
-        st.info("💡 Puedes minimizar la página para realizar tu transferencia y luego adjuntar el comprobante abajo.")
-
-    # 3. SUBIDA DEL COMPROBANTE Y CONFIRMACIÓN
+    # 5. SUBIDA DEL COMPROBANTE
     st.markdown("### 📄 COMPROBANTE DE PAGO *")
     comprobante_dialog = st.file_uploader(
-        "Adjunta la imagen de tu transferencia o depósito:",
+        "Adjunta la foto o imagen de tu comprobante de pago:",
         type=["png", "jpg", "jpeg"],
         key="file_comp_dialog",
     )
 
+    st.markdown("---")
+
+    # =========================================================================
+    # 6. SECCIÓN TÉRMINOS Y CONDICIONES (EDITABLE - IMAGEN 2)
+    # =========================================================================
+    st.markdown('<div class="terms-card-box">', unsafe_allow_html=True)
+    
+    # !!! AQUÍ PUEDES MODIFICAR EL TEXTO DE LOS TÉRMINOS Y CONDICIONES A TU GUSTO !!!
+    texto_terminos_y_condiciones = """
+    Acepto los <a href="#" style="color:#00f0ff; text-decoration:underline;">Términos y Condiciones</a> y confirmo que los datos proporcionados (<strong>nombre completo y número de teléfono/WhatsApp</strong>) son correctos y verídicos. Entiendo que estos datos serán utilizados para la asignación de números y notificación de resultados. Rifas Sirio RD no se hace responsable por datos ingresados incorrectamente.
+    """
+    
+    acepta_terminos = st.checkbox(
+        "Acepto los Términos y Condiciones...", 
+        key="chk_terminos_condiciones",
+        help="Debes marcar esta casilla para poder confirmar la compra"
+    )
+    
+    st.markdown(f"<div style='margin-top:-10px;'>{texto_terminos_y_condiciones}</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # =========================================================================
+    # 7. TOTAL A PAGAR Y BOTÓN DE CONFIRMAR COMPRA (IMAGEN 1)
+    # =========================================================================
     total_calculado = st.session_state["cant_boletos_dialog"] * r_precio
+
+    st.markdown('<div class="total-checkout-bar">', unsafe_allow_html=True)
+    col_tot_txt, col_tot_btn = st.columns([1.2, 1.8], vertical_alignment="center")
+
+    with col_tot_txt:
+        st.markdown(
+            f"""
+            <div class="total-title-text">TOTAL A PAGAR</div>
+            <div class="total-amount-display">RD$ {total_calculado:,.2f}</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_tot_btn:
+        st.markdown('<div class="btn-confirm-purchase">', unsafe_allow_html=True)
+        btn_confirmar = st.button("CONFIRMAR COMPRA  ✔", key="btn_confirmar_final", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
     st.markdown(
-        f"<h3 style='color:#f59e0b; text-align:right;'>Total: RD$ {total_calculado:,.2f}</h3>",
+        "<p style='text-align:center; color:#94a3b8; font-size:0.8rem; margin-top:8px;'>ℹ️ Tu compra será validada en máximo 24 horas.</p>",
         unsafe_allow_html=True,
     )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    if st.button("🚀 ENVIAR Y RESERVAR NÚMEROS", use_container_width=True, type="primary"):
+    # Lógica de Validación al presionar el Botón Confirmar Compra
+    if btn_confirmar:
         if not nombre_u.strip() or not telefono_u.strip():
-            st.error("Por favor completa tu nombre y teléfono.")
-        elif not banco_activo:
-            st.error("Por favor selecciona un banco de pago.")
+            st.error("⚠️ Por favor completa tu nombre y número de teléfono.")
+        elif not banco_activo_key:
+            st.error("⚠️ Por favor selecciona un método de pago / banco.")
         elif not comprobante_dialog:
-            st.error("Debes subir la foto del comprobante de pago.")
+            st.error("⚠️ Debes subir la foto del comprobante de pago.")
+        elif not acepta_terminos:
+            st.error("⚠️ Debes aceptar los Términos y Condiciones marcando la casilla antes de continuar.")
         else:
-            # Procesamiento de la reserva
+            # Procesar Reserva
             conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
             c.execute(
@@ -448,7 +536,7 @@ def ventana_compra_dialogo():
             cant_req = st.session_state["cant_boletos_dialog"]
 
             if len(disp) < cant_req:
-                st.error("No hay suficientes números disponibles.")
+                st.error("No hay suficientes números disponibles en este momento.")
                 conn.close()
             else:
                 asignados = random.sample(disp, cant_req)
@@ -472,7 +560,7 @@ def ventana_compra_dialogo():
                         (
                             nombre_u.strip(),
                             telefono_u.strip(),
-                            banco_activo,
+                            banco_activo_key,
                             path_comp,
                             ahora,
                             b_id,
@@ -487,20 +575,8 @@ def ventana_compra_dialogo():
 
 
 # ---------------------------------------------------------
-# INICIALIZACIÓN DE BASE DE DATOS
+# INICIALIZACIÓN DE LA BASE DE DATOS
 # ---------------------------------------------------------
-def censurar_nombre(nombre):
-    if not nombre or len(nombre) < 3:
-        return "Usu***io"
-    return f"{nombre[:3]}***{nombre[-2:] if len(nombre) > 4 else ''}"
-
-
-def censurar_telefono(telefono):
-    if not telefono or len(telefono) < 7:
-        return "829***17"
-    return f"{telefono[:3]}***{telefono[-2:]}"
-
-
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -565,7 +641,7 @@ def init_db():
 init_db()
 
 # ---------------------------------------------------------
-# BARRA SUPERIOR
+# NAVEGACIÓN Y ENCABEZADO
 # ---------------------------------------------------------
 col_head1, col_head2 = st.columns([3, 2], vertical_alignment="center")
 
@@ -613,14 +689,13 @@ seccion = st.session_state["seccion_activa"]
 
 st.markdown("---")
 
-# Mensaje de confirmación si completó la compra
 if st.session_state.get("compra_dialog_exitosa"):
     st.success("🎉 ¡Felicidades! Tu compra ha sido enviada y está en proceso de validación.")
     st.info("Puedes verificar tus boletos en la sección **🔎 Verificador de boletos**.")
     st.session_state.pop("compra_dialog_exitosa", None)
 
 # ---------------------------------------------------------
-# SECCIÓN: INICIO Y CATÁLOGO
+# SECCIÓN PRINCIPAL: INICIO
 # ---------------------------------------------------------
 if seccion == "🏠 Inicio & Catálogo":
     col_logo, col_titulo = st.columns([1, 2], vertical_alignment="center")
@@ -726,7 +801,6 @@ if seccion == "🏠 Inicio & Catálogo":
 
     conn.close()
 
-    # Si se presionó JUGAR, se despliega la ventana
     if st.session_state.get("abrir_modal_compra"):
         st.session_state.pop("abrir_modal_compra", None)
         ventana_compra_dialogo()
@@ -754,7 +828,7 @@ elif seccion == "🔎 Verificador de boletos":
 
 elif seccion == "❓ Cómo jugar":
     st.header("❓ Cómo Participar")
-    st.markdown("1. Presiona JUGAR en el catálogo.\n2. Selecciona la cantidad de números con los botones `+` / `-`.\n3. Selecciona tu banco, copia la cuenta y sube el comprobante.")
+    st.markdown("1. Presiona JUGAR en el catálogo.\n2. Elige un combo o selecciona manualmente la cantidad de números.\n3. Selecciona la foto de tu banco, copia el número de cuenta y adjunta el comprobante.")
 
 elif seccion == "🤖 Soporte IA":
     abrir_soporte_ia()
