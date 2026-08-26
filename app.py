@@ -34,6 +34,42 @@ if "banco_pago" not in st.session_state:
     st.session_state["banco_pago"] = "Banreservas"
 
 # ---------------------------------------------------------
+# FUNCIÓN AUXILIAR: BOTÓN PARA COPIAR AL PORTAPAPELES
+# ---------------------------------------------------------
+def render_copy_button(texto_a_copiar, key_id):
+    components.html(
+        f"""
+        <button id="btn_{key_id}" onclick="copiarTexto_{key_id}()" style="
+            background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+            transition: all 0.2s ease;
+            width: 100%;
+        ">📋 Copiar Número de Cuenta</button>
+        <script>
+        function copiarTexto_{key_id}() {{
+            navigator.clipboard.writeText("{texto_a_copiar}").then(function() {{
+                const btn = document.getElementById("btn_{key_id}");
+                btn.innerText = "✅ ¡Copiado!";
+                btn.style.background = "#22c55e";
+                setTimeout(function() {{
+                    btn.innerText = "📋 Copiar Número de Cuenta";
+                    btn.style.background = "linear-gradient(90deg, #0284c7 0%, #38bdf8 100%)";
+                }}, 2500);
+            }});
+        }}
+        </script>
+        """,
+        height=45,
+    )
+
+# ---------------------------------------------------------
 # ESTILOS CSS PROFESIONALES (LUJO PLATEADO/AZUL CIELO & NEÓN)
 # ---------------------------------------------------------
 bg_color = (
@@ -54,7 +90,6 @@ st.markdown(
     <style>
     .stApp {{ background: {bg_color} !important; color: {text_color}; }}
     
-    /* Animación de Brillo Metallic-Sky Blue */
     @keyframes metallic-shine {{
         0% {{ background-position: 0% 50%; }}
         50% {{ background-position: 100% 50%; }}
@@ -100,7 +135,6 @@ st.markdown(
         .hero-title {{ font-size: 1.9rem; }}
     }}
 
-    /* Tarjetas de Bancos Seleccionables */
     .bank-card {{
         border-radius: 12px;
         padding: 15px;
@@ -120,7 +154,6 @@ st.markdown(
         opacity: 0.7;
     }}
 
-    /* Caja de detalles de cuenta desplegada */
     .bank-details-box {{
         background: #090d16;
         border: 1px solid #38bdf8;
@@ -680,33 +713,38 @@ elif st.session_state["vista_actual"] == "rifas":
                 st.session_state["banco_pago"] = "Banco Popular"
                 st.rerun()
 
-        # Despliegue de datos de la cuenta seleccionada
+        # Despliegue de datos de la cuenta seleccionada con botón de copiar
         if is_banreservas:
+            num_cta_ban = "9606561652"
             st.markdown(
-                """
+                f"""
                 <div class="bank-details-box">
                     <h4 style="color: #38bdf8; margin-top: 0;">📌 DATOS PARA TRANSFERENCIA - BANRESERVAS</h4>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Banco:</strong> Banreservas</p>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Tipo de Cuenta:</strong> Cuenta de Ahorros</p>
-                    <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.1rem;">9606561652</span></p>
-                    <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> Argenis</p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.2rem;">{num_cta_ban}</span></p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> ARGENIS MARTÍNEZ</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
+            render_copy_button(num_cta_ban, "banreservas")
+
         elif is_popular:
+            num_cta_pop = "821794971"
             st.markdown(
-                """
+                f"""
                 <div class="bank-details-box">
                     <h4 style="color: #38bdf8; margin-top: 0;">📌 DATOS PARA TRANSFERENCIA - BANCO POPULAR</h4>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Banco:</strong> Banco Popular</p>
                     <p style="margin: 5px 0; color: #ffffff;"><strong>Tipo de Cuenta:</strong> Cuenta de Ahorros</p>
-                    <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.1rem;">821794971</span></p>
-                    <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> Argenis</p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Número de Cuenta:</strong> <span style="color:#38bdf8; font-weight:bold; font-size:1.2rem;">{num_cta_pop}</span></p>
+                    <p style="margin: 5px 0; color: #ffffff;"><strong>Titular:</strong> ARGENIS MARTÍNEZ</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
+            render_copy_button(num_cta_pop, "popular")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -842,8 +880,8 @@ if st.session_state["chat_abierto"]:
             st.session_state["esperando_telefono_ia"] = False
             st.session_state["respuesta_ia_msg"] = (
                 "**Cuentas bancarias oficiales:**\n\n"
-                "🟣 **Banreservas (Ahorros):** `9606561652` - Titular: Argenis\n"
-                "🔵 **Banco Popular (Ahorros):** `821794971` - Titular: Argenis"
+                "🟣 **Banreservas (Ahorros):** `9606561652` - Titular: ARGENIS MARTÍNEZ\n"
+                "🔵 **Banco Popular (Ahorros):** `821794971` - Titular: ARGENIS MARTÍNEZ"
             )
 
     with c_ia2:
