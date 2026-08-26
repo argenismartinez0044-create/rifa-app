@@ -1,9 +1,9 @@
 import streamlit as st
 
-# Configuración de la página
+# Configuración básica de la página
 st.set_page_config(page_title="Rifa App", layout="wide")
 
-# Inyección de HTML, CSS y JavaScript para Streamlit
+# Variable con todo el HTML, CSS y JavaScript unificado
 modal_code = """
 <style>
 /* ==========================================================================
@@ -81,7 +81,7 @@ modal_code = """
 }
 
 /* ==========================================================================
-   3. GRILLA Y TARJETAS DE COMBOS (ESTILO NEÓN)
+   3. GRILLA Y TARJETAS DE COMBOS
    ========================================================================== */
 .combos-container {
     display: grid;
@@ -111,14 +111,12 @@ modal_code = """
     transform: translateY(-5px);
 }
 
-/* Colores y resplandores específicos de cada paquete */
 .combo-card.popular { border: 1.5px solid #eab308; box-shadow: inset 0 0 10px rgba(234,179,8,0.1), 0 0 15px rgba(234,179,8,0.25); }
 .combo-card.elite { border: 1.5px solid #06b6d4; box-shadow: inset 0 0 10px rgba(6,182,212,0.1), 0 0 15px rgba(6,182,212,0.25); }
 .combo-card.campeon { border: 1.5px solid #3b82f6; box-shadow: inset 0 0 10px rgba(59,130,246,0.1), 0 0 15px rgba(59,130,246,0.25); }
 .combo-card.leyenda { border: 1.5px solid #eab308; box-shadow: inset 0 0 10px rgba(234,179,8,0.1), 0 0 15px rgba(234,179,8,0.25); }
 .combo-card.mitico { border: 1.5px solid #ef4444; box-shadow: inset 0 0 10px rgba(239,68,68,0.1), 0 0 15px rgba(239,68,68,0.25); }
 
-/* Etiquetas superiores (Badges) */
 .badge {
     position: absolute;
     top: -12px;
@@ -143,7 +141,6 @@ modal_code = """
 .card-unit { font-size: 0.65rem; color: #64748b; letter-spacing: 1px; }
 .card-price { font-size: 0.95rem; font-weight: bold; color: #ffffff; margin-top: 10px; }
 
-/* Botón de Cantidad Personalizada */
 .btn-custom-qty {
     width: 100%;
     background: transparent;
@@ -161,7 +158,7 @@ modal_code = """
 .min-qty-text { text-align: center; color: #475569; font-size: 0.75rem; margin-top: 6px; }
 
 /* ==========================================================================
-   4. FORMULARIO Y MÉTODOS DE PAGO (PASO 2)
+   4. FORMULARIO Y MÉTODOS DE PAGO
    ========================================================================== */
 .btn-back {
     background: none; border: none;
@@ -203,7 +200,6 @@ modal_code = """
 .total-box span { color: #cbd5e1; font-size: 0.9rem; }
 .total-box strong { color: #22c55e; font-size: 1.25rem; }
 
-/* Grilla de Métodos de Pago */
 .payment-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -246,12 +242,11 @@ modal_code = """
 </style>
 
 <!-- ESTRUCTURA HTML DEL MODAL -->
-<div id="modalJugar" class="modal-overlay" style="display: flex;">
+<div id="modalJugar" class="modal-overlay">
     <div class="modal-content">
-        <!-- Botón para cerrar -->
         <span class="close-btn" onclick="cerrarModal()">&times;</span>
 
-        <!-- ==================== PASO 1: SELECCIÓN DE COMBOS ==================== -->
+        <!-- PASO 1: SELECCIÓN DE COMBOS -->
         <div id="paso1-combos" class="modal-step">
             <h2 class="modal-title">S 17 PRO MAX POR 15 PESITOS FLASH#25</h2>
             <p class="modal-subtitle">Elige tu paquete de números</p>
@@ -261,9 +256,7 @@ modal_code = """
                 <p class="sub-instruction">A mayor cantidad, más oportunidades de ganar</p>
             </div>
 
-            <!-- TARJETAS DE PAQUETES DE COMBOS -->
             <div class="combos-container">
-                <!-- 1. PRO (POPULAR) -->
                 <button type="button" class="combo-card popular" onclick="seleccionarCombo(10)">
                     <span class="badge yellow">★ POPULAR</span>
                     <div class="card-icon">🚀</div>
@@ -273,7 +266,6 @@ modal_code = """
                     <div class="card-price">RD$ 150</div>
                 </button>
 
-                <!-- 2. ELITE -->
                 <button type="button" class="combo-card elite" onclick="seleccionarCombo(15)">
                     <div class="card-icon">🏆</div>
                     <h3 class="card-title">ELITE</h3>
@@ -282,7 +274,6 @@ modal_code = """
                     <div class="card-price">RD$ 225</div>
                 </button>
 
-                <!-- 3. CAMPEÓN -->
                 <button type="button" class="combo-card campeon" onclick="seleccionarCombo(25)">
                     <div class="card-icon">👑</div>
                     <h3 class="card-title">CAMPEÓN</h3>
@@ -291,7 +282,6 @@ modal_code = """
                     <div class="card-price">RD$ 375</div>
                 </button>
 
-                <!-- 4. LEYENDA (VIP) -->
                 <button type="button" class="combo-card leyenda" onclick="seleccionarCombo(50)">
                     <span class="badge yellow">★ VIP</span>
                     <div class="card-icon">⚡</div>
@@ -301,7 +291,6 @@ modal_code = """
                     <div class="card-price">RD$ 750</div>
                 </button>
 
-                <!-- 5. MÍTICO (MÁXIMO) -->
                 <button type="button" class="combo-card mitico" onclick="seleccionarCombo(100)">
                     <span class="badge red">🔥 MÁXIMO</span>
                     <div class="card-icon">🦅</div>
@@ -312,7 +301,6 @@ modal_code = """
                 </button>
             </div>
 
-            <!-- BOTÓN CANTIDAD PERSONALIZADA -->
             <div class="custom-qty-container">
                 <button type="button" class="btn-custom-qty" onclick="irACantidadPersonalizada()">
                     ⚙ ELEGIR CANTIDAD PERSONALIZADA
@@ -321,7 +309,7 @@ modal_code = """
             </div>
         </div>
 
-        <!-- ==================== PASO 2: FORMULARIO Y CANTIDAD ==================== -->
+        <!-- PASO 2: FORMULARIO Y CANTIDAD -->
         <div id="paso2-formulario" class="modal-step" style="display: none;">
             <button type="button" class="btn-back" onclick="volverAPaso1()">← Cambiar paquete</button>
 
@@ -348,7 +336,6 @@ modal_code = """
                     <input type="tel" id="telefono" name="telefono" placeholder="809-000-0000" required>
                 </div>
 
-                <!-- MÉTODOS DE PAGO DISPONIBLES -->
                 <div class="form-group">
                     <label>Selecciona Método de Pago:</label>
                     <input type="hidden" id="metodoPagoSeleccionado" name="metodo_pago" value="banreservas">
@@ -443,5 +430,5 @@ function procesarFormulario(event) {
 </script>
 """
 
-# Renderizar el HTML de manera segura dentro de Streamlit
+# Renderizar dentro de Streamlit
 st.markdown(modal_code, unsafe_allow_html=True)
