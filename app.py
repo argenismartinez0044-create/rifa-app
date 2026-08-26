@@ -1,6 +1,10 @@
-<!-- ARCHIVO COMPLETO: MODAL Y LÓGICA DE JUGADA DE BOLETOS -->
+import streamlit as st
 
-<!-- ESTILOS CSS -->
+# Configuración de la página
+st.set_page_config(page_title="Rifa App", layout="wide")
+
+# Inyección de HTML, CSS y JavaScript para Streamlit
+modal_code = """
 <style>
 /* ==========================================================================
    1. ESTRUCTURA BASE Y OVERLAY DEL MODAL
@@ -13,7 +17,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
+    z-index: 99999;
     padding: 15px;
     box-sizing: border-box;
 }
@@ -241,9 +245,8 @@
 .btn-submit-final:hover { background: #16a34a; }
 </style>
 
-
 <!-- ESTRUCTURA HTML DEL MODAL -->
-<div id="modalJugar" class="modal-overlay" style="display: none;">
+<div id="modalJugar" class="modal-overlay" style="display: flex;">
     <div class="modal-content">
         <!-- Botón para cerrar -->
         <span class="close-btn" onclick="cerrarModal()">&times;</span>
@@ -324,9 +327,7 @@
 
             <h2 class="step-title">Finaliza tu Jugada</h2>
 
-            <form id="formJugada" method="POST" action="/procesar-jugada/" onsubmit="procesarFormulario(event)">
-                <!-- En Django se incluye {% csrf_token %} en esta línea si aplica -->
-
+            <form id="formJugada" onsubmit="procesarFormulario(event)">
                 <div class="form-group">
                     <label for="inputCantidad">Cantidad de Números / Boletos:</label>
                     <input type="number" id="inputCantidad" name="cantidad" min="10" value="10" oninput="actualizarPrecioTotal()" required>
@@ -347,7 +348,7 @@
                     <input type="tel" id="telefono" name="telefono" placeholder="809-000-0000" required>
                 </div>
 
-                <!-- MÉTODOS DE PAGO DISPONIBLES (BHD y Santa Cruz retirados) -->
+                <!-- MÉTODOS DE PAGO DISPONIBLES -->
                 <div class="form-group">
                     <label>Selecciona Método de Pago:</label>
                     <input type="hidden" id="metodoPagoSeleccionado" name="metodo_pago" value="banreservas">
@@ -371,25 +372,14 @@
     </div>
 </div>
 
-
 <!-- LÓGICA JAVASCRIPT -->
 <script>
-// Precio unitario por cada boleto
-const PRECIO_UNITARIO = 15; // RD$15 por número
+const PRECIO_UNITARIO = 15;
 
-// Función para abrir el modal al presionar "Jugar"
-function abrirModalJugar() {
-    document.getElementById('modalJugar').style.display = 'flex';
-    document.getElementById('paso1-combos').style.display = 'block';
-    document.getElementById('paso2-formulario').style.display = 'none';
-}
-
-// Función para cerrar el modal
 function cerrarModal() {
     document.getElementById('modalJugar').style.display = 'none';
 }
 
-// Cuando se selecciona una tarjeta de combo en el Paso 1
 function seleccionarCombo(cantidad) {
     const inputCantidad = document.getElementById('inputCantidad');
     inputCantidad.value = cantidad;
@@ -397,32 +387,27 @@ function seleccionarCombo(cantidad) {
     mostrarPaso2();
 }
 
-// Cuando se presiona "Elegir cantidad personalizada"
 function irACantidadPersonalizada() {
     const inputCantidad = document.getElementById('inputCantidad');
-    inputCantidad.value = 10; // Valor por defecto
+    inputCantidad.value = 10;
     actualizarPrecioTotal();
     mostrarPaso2();
 }
 
-// Cambio de pantalla al Paso 2
 function mostrarPaso2() {
     document.getElementById('paso1-combos').style.display = 'none';
     document.getElementById('paso2-formulario').style.display = 'block';
 }
 
-// Regresar al Paso 1
 function volverAPaso1() {
     document.getElementById('paso2-formulario').style.display = 'none';
     document.getElementById('paso1-combos').style.display = 'block';
 }
 
-// Actualización automática del precio (Boletos x RD$15)
 function actualizarPrecioTotal() {
     const inputCantidad = document.getElementById('inputCantidad');
     let cantidad = parseInt(inputCantidad.value) || 0;
     
-    // Garantizar que la cantidad mínima sea 10
     if (cantidad < 10 && cantidad !== 0) {
         cantidad = 10;
     }
@@ -431,31 +416,32 @@ function actualizarPrecioTotal() {
     document.getElementById('displayTotal').innerText = `RD$ ${total.toLocaleString()}`;
 }
 
-// Selección de método de pago (resuelve el error de cierre inesperado)
 function seleccionarMetodo(event, metodo) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
 
-    // Guardar el valor en el campo oculto del formulario
     document.getElementById('metodoPagoSeleccionado').value = metodo;
 
-    // Cambiar visualmente el estado activo del botón
     const botones = document.querySelectorAll('.payment-btn');
     botones.forEach(btn => btn.classList.remove('active'));
     
     event.currentTarget.classList.add('active');
 }
 
-// Validación antes del envío final
 function procesarFormulario(event) {
+    event.preventDefault();
     const cantidad = parseInt(document.getElementById('inputCantidad').value);
     if (cantidad < 10) {
-        event.preventDefault();
         alert("La cantidad mínima para jugar es de 10 boletos.");
         return false;
     }
-    // El formulario se enviará normalmente a Python a la ruta /procesar-jugada/
+    alert("¡Jugada registrada con éxito!");
+    cerrarModal();
 }
 </script>
+"""
+
+# Renderizar el HTML de manera segura dentro de Streamlit
+st.markdown(modal_code, unsafe_allow_html=True)
