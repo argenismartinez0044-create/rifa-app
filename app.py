@@ -30,6 +30,8 @@ if "chat_abierto" not in st.session_state:
     st.session_state["chat_abierto"] = False
 if "esperando_telefono_ia" not in st.session_state:
     st.session_state["esperando_telefono_ia"] = False
+if "banco_pago" not in st.session_state:
+    st.session_state["banco_pago"] = "Banreservas"
 
 # ---------------------------------------------------------
 # ESTILOS CSS PROFESIONALES (LUJO PLATEADO/AZUL CIELO & NEÓN)
@@ -65,7 +67,6 @@ st.markdown(
         margin-bottom: 25px;
     }}
 
-    /* Primera línea (más pequeña) */
     .hero-subtitle {{
         font-size: 1.25rem;
         font-weight: 600;
@@ -80,7 +81,6 @@ st.markdown(
         margin-bottom: 8px;
     }}
 
-    /* Segunda línea (el doble de tamaño) */
     .hero-title {{
         font-size: 2.6rem;
         font-weight: 900;
@@ -95,13 +95,31 @@ st.markdown(
         margin-top: 0;
     }}
 
-    /* Media queries para responsividad móvil */
     @media (max-width: 768px) {{
         .hero-subtitle {{ font-size: 0.95rem; }}
         .hero-title {{ font-size: 1.9rem; }}
     }}
 
-    /* Animación Parpadeante */
+    /* Tarjetas de Bancos Seleccionables */
+    .bank-card {{
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 10px;
+    }}
+    .bank-card-active {{
+        border: 2px solid #38bdf8 !important;
+        background: rgba(56, 189, 248, 0.15) !important;
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }}
+    .bank-card-inactive {{
+        border: 1px solid #334155;
+        background: #0f172a;
+        opacity: 0.7;
+    }}
+
     @keyframes pulse-gold {{
         0% {{ box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); opacity: 0.8; }}
         70% {{ box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); opacity: 1; }}
@@ -149,7 +167,6 @@ st.markdown(
         margin-bottom: 12px;
     }}
 
-    /* Estilos Verificador Modal */
     .verificador-box {{
         background: #090d16;
         border: 1px solid #1e3a8a;
@@ -160,7 +177,6 @@ st.markdown(
         box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }}
     
-    /* Contador (+ / -) */
     .counter-display {{
         background: #090d16;
         border: 2px solid #2563eb;
@@ -172,7 +188,6 @@ st.markdown(
         text-align: center;
     }}
 
-    /* Nota Legal Azul Oscuro */
     .disclaimer-box {{
         background: #030712;
         border-left: 4px solid #1d4ed8;
@@ -321,7 +336,7 @@ with c_head5:
         st.rerun()
 
 # ---------------------------------------------------------
-# ENTRADA DE PRESENTACIÓN DE LUJO (ENCABEZADO PRINCIPAL)
+# ENTRADA DE PRESENTACIÓN DE LUJO
 # ---------------------------------------------------------
 st.markdown(
     """
@@ -594,29 +609,81 @@ elif st.session_state["vista_actual"] == "rifas":
         with col_tel:
             telefono_cliente = st.text_input("Teléfono (WhatsApp) *")
 
-        banco_sel = st.session_state.get("banco_pago", "Banreservas")
+        # ---------------------------------------------------------
+        # MÉTODO DE PAGO VISUAL CON IMÁGENES Y SELECCIÓN FUNCIONAL
+        # ---------------------------------------------------------
+        st.markdown("### 💳 Selecciona el Método de Pago *")
+
         col_b1, col_b2 = st.columns(2)
+
+        is_banreservas = st.session_state["banco_pago"] == "Banreservas"
+        is_popular = st.session_state["banco_pago"] == "Banco Popular"
+
+        class_b1 = (
+            "bank-card bank-card-active"
+            if is_banreservas
+            else "bank-card bank-card-inactive"
+        )
+        class_b2 = (
+            "bank-card bank-card-active"
+            if is_popular
+            else "bank-card bank-card-inactive"
+        )
+
         with col_b1:
-            if st.button("🏦 RESERVAS (AHORRO)", use_container_width=True):
+            st.markdown(
+                f"""
+                <div class="{class_b1}">
+                    <h4 style="color:#ffffff; margin:0;">🟣 BANRESERVAS</h4>
+                    <p style="color:#94a3b8; font-size:0.85rem; margin:5px 0 0 0;">Cuenta de Ahorros: <strong>9606561652</strong></p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if os.path.exists("banreservas.png"):
+                st.image("banreservas.png", use_container_width=True)
+            if st.button(
+                "PAGAR CON BANRESERVAS " + ("✅" if is_banreservas else ""),
+                key="btn_pay_banreservas",
+                use_container_width=True,
+            ):
                 st.session_state["banco_pago"] = "Banreservas"
                 st.rerun()
+
         with col_b2:
-            if st.button("🏦 POPULAR (AHORRO)", use_container_width=True):
+            st.markdown(
+                f"""
+                <div class="{class_b2}">
+                    <h4 style="color:#ffffff; margin:0;">🔵 BANCO POPULAR</h4>
+                    <p style="color:#94a3b8; font-size:0.85rem; margin:5px 0 0 0;">Cuenta de Ahorros: <strong>821794971</strong></p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if os.path.exists("popular.png"):
+                st.image("popular.png", use_container_width=True)
+            if st.button(
+                "PAGAR CON BANCO POPULAR " + ("✅" if is_popular else ""),
+                key="btn_pay_popular",
+                use_container_width=True,
+            ):
                 st.session_state["banco_pago"] = "Banco Popular"
                 st.rerun()
 
+        st.info(
+            f"📌 Método de pago seleccionado actualmente: **{st.session_state['banco_pago']}**"
+        )
+
         comprobante_file = st.file_uploader(
-            "Subir Comprobante *", type=["png", "jpg", "jpeg"]
+            "Subir Comprobante de Pago *", type=["png", "jpg", "jpeg"]
         )
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # CASILLA OBLIGATORIA DE TÉRMINOS Y CONDICIONES
         acepta_terminos = st.checkbox(
             "Acepto los términos y condiciones y confirmo que los datos proporcionados (nombre completo, apellido y número de teléfono/WhatsApp) son correctos y verificados. Entiendo que estos datos serán utilizados para la asignación de números y notificaciones de consultas."
         )
 
-        # NOTA DE RESPONSABILIDAD EN AZUL OSCURO
         st.markdown(
             """
             <div class="disclaimer-box">
@@ -630,7 +697,6 @@ elif st.session_state["vista_actual"] == "rifas":
         if st.button(
             "CONFIRMAR COMPRA ✅", type="primary", use_container_width=True
         ):
-            # VALIDACIÓN DETALLADA CAMPO POR CAMPO INMEDIATA
             faltantes = []
             if not nombre_cliente.strip():
                 faltantes.append("Nombre Completo")
@@ -672,7 +738,7 @@ elif st.session_state["vista_actual"] == "rifas":
                             (
                                 nombre_cliente.strip(),
                                 telefono_cliente.strip(),
-                                banco_sel,
+                                st.session_state["banco_pago"],
                                 path_comp,
                                 datetime.datetime.now(),
                                 b_id,
