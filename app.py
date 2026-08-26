@@ -1,24 +1,34 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
-# Configuración básica de la página
+# Configuración de la página de Streamlit
 st.set_page_config(page_title="Rifa App", layout="wide")
 
-# Variable con todo el HTML, CSS y JavaScript unificado
-modal_code = """
+# Código HTML, CSS y JS completamente aislado como string de Python
+HTML_CODE = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
 <style>
+/* Reset y estilos generales */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #050914;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #ffffff;
+}
+
 /* ==========================================================================
    1. ESTRUCTURA BASE Y OVERLAY DEL MODAL
    ========================================================================== */
 .modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(5, 9, 20, 0.94);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 99999;
-    padding: 15px;
+    min-height: 100vh;
+    padding: 20px;
     box-sizing: border-box;
 }
 
@@ -27,12 +37,11 @@ modal_code = """
     border: 1px solid #1e293b;
     border-radius: 16px;
     padding: 30px 25px;
-    max-width: 950px;
+    max-width: 900px;
     width: 100%;
     color: #ffffff;
     box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
     position: relative;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     box-sizing: border-box;
 }
 
@@ -54,12 +63,14 @@ modal_code = """
     font-family: monospace;
     font-size: 1.3rem;
     margin: 0 0 5px 0;
+    text-align: center;
 }
 
 .modal-subtitle {
     color: #64748b;
     font-size: 0.85rem;
     margin: 0 0 25px 0;
+    text-align: center;
 }
 
 .instruction-box {
@@ -85,7 +96,7 @@ modal_code = """
    ========================================================================== */
 .combos-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 15px;
     margin-bottom: 25px;
 }
@@ -240,12 +251,11 @@ modal_code = """
 }
 .btn-submit-final:hover { background: #16a34a; }
 </style>
+</head>
+<body>
 
-<!-- ESTRUCTURA HTML DEL MODAL -->
-<div id="modalJugar" class="modal-overlay">
+<div class="modal-overlay">
     <div class="modal-content">
-        <span class="close-btn" onclick="cerrarModal()">&times;</span>
-
         <!-- PASO 1: SELECCIÓN DE COMBOS -->
         <div id="paso1-combos" class="modal-step">
             <h2 class="modal-title">S 17 PRO MAX POR 15 PESITOS FLASH#25</h2>
@@ -359,13 +369,8 @@ modal_code = """
     </div>
 </div>
 
-<!-- LÓGICA JAVASCRIPT -->
 <script>
 const PRECIO_UNITARIO = 15;
-
-function cerrarModal() {
-    document.getElementById('modalJugar').style.display = 'none';
-}
 
 function seleccionarCombo(cantidad) {
     const inputCantidad = document.getElementById('inputCantidad');
@@ -425,10 +430,11 @@ function procesarFormulario(event) {
         return false;
     }
     alert("¡Jugada registrada con éxito!");
-    cerrarModal();
 }
 </script>
+</body>
+</html>
 """
 
-# Renderizar dentro de Streamlit
-st.markdown(modal_code, unsafe_allow_html=True)
+# Renderizar de forma segura en Streamlit mediante components.html
+components.html(HTML_CODE, height=750, scrolling=True)
