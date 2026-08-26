@@ -9,7 +9,122 @@ from PIL import Image
 DB_FILE = "rifas_v4.db"
 WHATSAPP_NUMERO = "8294835217"
 
-st.set_page_config(page_title="Rifas Sirio RD", page_icon="🎲", layout="wide")
+st.set_page_config(
+    page_title="Rifas Sirio RD",
+    page_icon="🎲",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ---------------------------------------------------------
+# ESTILOS CYBERPUNK / MEJORAS VISUALES (CSS)
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    /* Fondo principal cibernético */
+    .stApp {
+        background: linear-gradient(180deg, #090b14 0%, #05060a 100%) !important;
+        color: #FFFFFF;
+        font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Ocultar header por defecto y ajustar espaciados */
+    header {visibility: hidden;}
+    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
+
+    /* Botón general estilo Neón Cyberpunk */
+    div.stButton > button {
+        background: linear-gradient(90deg, #1b2238 0%, #111525 100%);
+        color: #FFFFFF;
+        border: 1px solid #00f0ff;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    div.stButton > button:hover {
+        border-color: #ff0055;
+        box-shadow: 0 0 10px #ff0055;
+        color: #ffffff;
+    }
+
+    /* Botones de Acción / Comprar */
+    .btn-buy-container div.stButton > button {
+        background: linear-gradient(90deg, #ff0055 0%, #831843 100%) !important;
+        border: 1px solid #ff0055 !important;
+        color: #ffffff !important;
+        font-size: 1.1rem !important;
+        border-radius: 10px !important;
+        height: 50px !important;
+    }
+    .btn-buy-container div.stButton > button:hover {
+        box-shadow: 0 0 15px #ff0055 !important;
+    }
+
+    /* Inputs y Selectboxes estilo Neón */
+    .stSelectbox > div > div, .stTextInput > div > div > input {
+        background-color: #0e1222 !important;
+        border: 1px solid #ff0055 !important;
+        border-radius: 10px !important;
+        color: #ffffff !important;
+    }
+
+    /* Tarjeta de Dinámicas / Rifas */
+    .raffle-card {
+        background: #0e1222;
+        border: 1px solid #1e293b;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+
+    /* Tarjetas de Verificador de Boletos */
+    .ticket-card {
+        background: linear-gradient(135deg, #0e1329 0%, #171d3b 100%);
+        border: 1px solid #1a254b;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .ticket-number {
+        font-size: 1.8rem;
+        font-weight: 900;
+        color: #fce205;
+        letter-spacing: 2px;
+    }
+    .ticket-user {
+        color: #a0aabf;
+        font-size: 0.85rem;
+    }
+    .ticket-badge {
+        background-color: #052e16;
+        color: #22c55e;
+        border: 1px solid #15803d;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 0.75rem;
+        display: inline-block;
+        margin-top: 5px;
+    }
+    
+    /* Indicadores de Paso */
+    .step-pill {
+        background: #172554;
+        color: #60a5fa;
+        font-size: 0.8rem;
+        font-weight: bold;
+        padding: 4px 12px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
 
 
 # ---------------------------------------------------------
@@ -114,8 +229,20 @@ def abrir_soporte_ia():
 
 
 # ---------------------------------------------------------
-# INICIALIZACIÓN DE BASE DE DATOS
+# INICIALIZACIÓN DE BASE DE DATOS Y FUNCIONES AUXILIARES
 # ---------------------------------------------------------
+def censurar_nombre(nombre):
+    if not nombre or len(nombre) < 3:
+        return "Usu***io"
+    return f"{nombre[:3]}***{nombre[-2:] if len(nombre) > 4 else ''}"
+
+
+def censurar_telefono(telefono):
+    if not telefono or len(telefono) < 7:
+        return "829***17"
+    return f"{telefono[:3]}***{telefono[-2:]}"
+
+
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -175,7 +302,9 @@ def init_db():
         conn.commit()
 
     c.execute("UPDATE rifas SET min_boletos = 15, precio_boleto = 5.0 WHERE id = 1")
-    c.execute("UPDATE rifas SET min_boletos = 10, precio_boleto = 15.0, nombre = '5 iPhone 17 Pro Max' WHERE id = 2")
+    c.execute(
+        "UPDATE rifas SET min_boletos = 10, precio_boleto = 15.0, nombre = '5 iPhone 17 Pro Max' WHERE id = 2"
+    )
     conn.commit()
     conn.close()
 
@@ -201,32 +330,40 @@ init_db()
 liberar_expirados()
 
 # ---------------------------------------------------------
-# ESTILOS Y NAVEGACIÓN
+# BARRA SUPERIOR Y NAVEGACIÓN
 # ---------------------------------------------------------
-st.markdown(
-    """
-    <style>
-    .stApp { background: linear-gradient(135deg, #0b0d17 0%, #171b2e 50%, #080910 100%) !important; color: #FFFFFF; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+col_head1, col_head2 = st.columns([4, 1])
+with col_head1:
+    st.markdown(
+        "<h2 style='color:#00f0ff; margin:0;'>SIRIO<span style='color:#ff0055;'>RIFAS</span> RD</h2>",
+        unsafe_allow_html=True,
+    )
 
-seccion = st.sidebar.radio(
-    "Navegación",
-    [
-        "🏠 Inicio & Catálogo",
-        "🔎 Verificador de boletos",
-        "❓ Cómo jugar",
-        "🤖 Soporte IA",
-        "🏆 Ganadores",
-        "⚙️ Administración",
-    ],
-)
+with col_head2:
+    with st.popover("☰ MENÚ", use_container_width=True):
+        st.markdown("### 🎯 Navegación")
+        seccion_menu = st.radio(
+            "Selecciona una opción:",
+            [
+                "🏠 Inicio & Catálogo",
+                "🔎 Verificador de boletos",
+                "❓ Cómo jugar",
+                "🤖 Soporte IA",
+                "🏆 Ganadores",
+                "⚙️ Administración",
+            ],
+            label_visibility="collapsed",
+        )
 
-st.sidebar.markdown("---")
-if st.sidebar.button("🤖 Abrir Chat de Soporte IA"):
-    abrir_soporte_ia()
+if "seccion_activa" not in st.session_state:
+    st.session_state["seccion_activa"] = "🏠 Inicio & Catálogo"
+
+if "seccion_menu" in locals() and seccion_menu:
+    st.session_state["seccion_activa"] = seccion_menu
+
+seccion = st.session_state["seccion_activa"]
+
+st.markdown("---")
 
 # ---------------------------------------------------------
 # SECCIÓN: INICIO Y CATÁLOGO
@@ -249,53 +386,86 @@ if seccion == "🏠 Inicio & Catálogo":
     # Cargar rifas de la base de datos
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT id, nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha FROM rifas")
+    c.execute(
+        "SELECT id, nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha FROM rifas"
+    )
     rifas_list = c.fetchall()
-    
-    cols_rifa = st.columns(len(rifas_list))
-    
-    for idx, r in enumerate(rifas_list):
+
+    for r in rifas_list:
         r_id, r_nombre, r_cat, r_precio, r_min, r_tot, r_img, r_fecha = r
-        
-        # Calcular el progreso
-        c.execute("SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado != 'disponible'", (r_id,))
+
+        c.execute(
+            "SELECT COUNT(*) FROM boletos WHERE rifa_id = ? AND estado != 'disponible'",
+            (r_id,),
+        )
         vendidos = c.fetchone()[0]
         progreso = round((vendidos / r_tot) * 100, 2)
-        
-        with cols_rifa[idx]:
+
+        with st.container():
+            st.markdown(
+                f"""
+                <div class="raffle-card">
+                    <h2 style="color:#ffffff; margin-top:0; font-size:1.5rem;">{r_nombre}</h2>
+                    <p style="color:#ff0055; font-weight:bold; margin-bottom:5px;">📅 Sorteo: {r_fecha}</p>
+                    <p style="color:#00f0ff; font-weight:bold; font-size:0.9rem; margin-top:0;">PROGRESO: {progreso}%</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
             if r_img and os.path.exists(r_img):
                 st.image(r_img, use_container_width=True)
-            st.subheader(r_nombre)
-            st.write(f"📅 **Fecha:** {r_fecha}")
-            st.write(f"📊 **PROGRESO: {progreso}%**")
+
             st.progress(progreso / 100)
-            st.markdown(f"### **RD$ {r_precio:.2f}**")
-            st.caption(f"Mínimo {r_min} boletos")
 
-            label_btn = (
-                f"🎮 JUGAR POR {r_nombre.upper()}"
-                if "PlayStation" in r_nombre
-                else f"📱 PARTICIPAR POR {r_nombre.upper()}"
-            )
+            # --- PRECIO AL LADO DEL BOTÓN DE COMPRA ---
+            col_precio, col_boton = st.columns([1.2, 1], vertical_alignment="center")
 
-            def seleccionar_rifa(rifa_id=r_id, nombre=r_nombre, precio=r_precio, minimo=r_min):
-                st.session_state["rifa_seleccionada"] = rifa_id
-                st.session_state["nombre_rifa"] = nombre
-                st.session_state["precio_rifa"] = precio
-                st.session_state["min_rifa"] = minimo
-                st.session_state["paso_compra"] = 1
-                st.session_state["cant_boletos"] = minimo
+            with col_precio:
+                st.markdown(
+                    f"""
+                    <div style="padding-left: 5px;">
+                        <span style="color:#a0aabf; font-size:0.8rem; display:block;">PRECIO POR BOLETO</span>
+                        <span style="color:#ffffff; font-size:1.6rem; font-weight:900;">RD$ {r_precio:,.2f}</span>
+                        <span style="color:#00f0ff; font-size:0.8rem; display:block;">Mínimo: {r_min} boletos</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-            st.button(
-                label_btn,
-                key=f"btn_jugar_{r_id}",
-                on_click=seleccionar_rifa,
-                use_container_width=True,
-            )
+            with col_boton:
+                st.markdown('<div class="btn-buy-container">', unsafe_allow_html=True)
+                label_btn = (
+                    f"🎮 JUGAR" if "PlayStation" in r_nombre else f"📱 PARTICIPAR"
+                )
+
+                def seleccionar_rifa(
+                    rifa_id=r_id,
+                    nombre=r_nombre,
+                    precio=r_precio,
+                    minimo=r_min,
+                ):
+                    st.session_state["rifa_seleccionada"] = rifa_id
+                    st.session_state["nombre_rifa"] = nombre
+                    st.session_state["precio_rifa"] = precio
+                    st.session_state["min_rifa"] = minimo
+                    st.session_state["paso_compra"] = 1
+                    st.session_state["cant_boletos"] = minimo
+
+                st.button(
+                    label_btn,
+                    key=f"btn_jugar_{r_id}",
+                    on_click=seleccionar_rifa,
+                    use_container_width=True,
+                )
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
     conn.close()
 
     # ---------------------------------------------------------
-    # FLUJO DE COMPRA PASO A PASO
+    # FLUJO DE COMPRA PASO A PASO (CON COMBOS ORIGINALES)
     # ---------------------------------------------------------
     if "rifa_seleccionada" in st.session_state:
         st.markdown("---")
@@ -354,7 +524,11 @@ if seccion == "🏠 Inicio & Catálogo":
                         """,
                         unsafe_allow_html=True,
                     )
-                    if st.button(f"Seleccionar", key=f"btn_set_combo_{i}", use_container_width=True):
+                    if st.button(
+                        f"Seleccionar",
+                        key=f"btn_set_combo_{i}",
+                        use_container_width=True,
+                    ):
                         st.session_state["cant_boletos"] = cant_combo
                         st.rerun()
 
@@ -393,8 +567,12 @@ if seccion == "🏠 Inicio & Catálogo":
                     st.error("Por favor completa tu nombre y teléfono/WhatsApp.")
                 else:
                     st.session_state["nombre_cliente"] = nombre_cliente.strip()
-                    st.session_state["telefono_cliente"] = telefono_cliente.strip()
-                    st.session_state["cant_boletos"] = int(cant_boletos_input)
+                    st.session_state["telefono_cliente"] = (
+                        telefono_cliente.strip()
+                    )
+                    st.session_state["cant_boletos"] = int(
+                        cant_boletos_input
+                    )
                     st.session_state["paso_compra"] = 2
                     st.rerun()
 
@@ -412,11 +590,21 @@ if seccion == "🏠 Inicio & Catálogo":
             if banco_pago == "Banreservas":
                 titular = "ARGENIS MARTINEZ C."
                 cuenta = "9606561652"
-                img_banco = "banreservas.png" if os.path.exists("banreservas.png") else ("barreserva.png" if os.path.exists("barreserva.png") else None)
+                img_banco = (
+                    "banreservas.png"
+                    if os.path.exists("banreservas.png")
+                    else (
+                        "barreserva.png"
+                        if os.path.exists("barreserva.png")
+                        else None
+                    )
+                )
             else:
                 titular = "ARGENIS MARTINEZ"
                 cuenta = "821794971"
-                img_banco = "popular.png" if os.path.exists("popular.png") else None
+                img_banco = (
+                    "popular.png" if os.path.exists("popular.png") else None
+                )
 
             st.markdown(
                 f"""
@@ -431,10 +619,8 @@ if seccion == "🏠 Inicio & Catálogo":
                 unsafe_allow_html=True,
             )
 
-            # Opción 1: Muestra el código directo con el botón de copiar nativo de Streamlit
             st.code(cuenta, language=None)
 
-            # Opción 2: Botón HTML personalizado de un solo clic que ejecuta JavaScript en la web
             html_copiar = f"""
             <button onclick="navigator.clipboard.writeText('{cuenta}').then(() => {{
                 this.innerText='✅ ¡CUENTA COPIADA!';
@@ -478,7 +664,7 @@ if seccion == "🏠 Inicio & Catálogo":
         elif paso == 3:
             st.subheader("📤 3. Sube el volante/comprobante del depósito")
 
-            banco_sel = st.session_state.get('banco_pago', 'Banco Seleccionado')
+            banco_sel = st.session_state.get("banco_pago", "Banco Seleccionado")
             st.info(
                 f"Banco seleccionado: **{banco_sel}** · "
                 f"Total a pagar: **RD$ {st.session_state['cant_boletos'] * precio:.2f}**"
@@ -509,7 +695,9 @@ if seccion == "🏠 Inicio & Catálogo":
 
             if reservar:
                 if not comprobante_file:
-                    st.error("Debes subir la imagen del volante/comprobante antes de continuar.")
+                    st.error(
+                        "Debes subir la imagen del volante/comprobante antes de continuar."
+                    )
                 else:
                     conn = sqlite3.connect(DB_FILE)
                     c = conn.cursor()
@@ -528,7 +716,9 @@ if seccion == "🏠 Inicio & Catálogo":
                         asignados = random.sample(disp, cant_boletos)
                         os.makedirs("comprobantes", exist_ok=True)
 
-                        extension = os.path.splitext(comprobante_file.name)[1].lower()
+                        extension = os.path.splitext(comprobante_file.name)[
+                            1
+                        ].lower()
                         if extension not in [".png", ".jpg", ".jpeg"]:
                             extension = ".png"
 
@@ -539,7 +729,9 @@ if seccion == "🏠 Inicio & Catálogo":
 
                         imagen_comprobante = Image.open(comprobante_file)
                         if imagen_comprobante.mode in ("RGBA", "LA", "P"):
-                            imagen_comprobante = imagen_comprobante.convert("RGB")
+                            imagen_comprobante = imagen_comprobante.convert(
+                                "RGB"
+                            )
                         imagen_comprobante.save(path_comp)
 
                         ahora = datetime.datetime.now()
@@ -557,7 +749,9 @@ if seccion == "🏠 Inicio & Catálogo":
                                 (
                                     st.session_state["nombre_cliente"],
                                     st.session_state["telefono_cliente"],
-                                    st.session_state.get("banco_pago", "No especificado"),
+                                    st.session_state.get(
+                                        "banco_pago", "No especificado"
+                                    ),
                                     path_comp,
                                     ahora,
                                     b_id,
@@ -572,7 +766,9 @@ if seccion == "🏠 Inicio & Catálogo":
                             "Tus boletos quedan reservados temporalmente mientras se valida el comprobante."
                         )
 
-                        st.subheader("🎟️ Tus Números Asignados (Pendientes de Validación):")
+                        st.subheader(
+                            "🎟️ Tus Números Asignados (Pendientes de Validación):"
+                        )
                         cols_num = st.columns(min(len(num_asignados), 5))
                         for i, n in enumerate(num_asignados):
                             cols_num[i % 5].metric(
@@ -587,37 +783,103 @@ if seccion == "🏠 Inicio & Catálogo":
 # SECCIÓN: VERIFICADOR
 # ---------------------------------------------------------
 elif seccion == "🔎 Verificador de boletos":
-    st.header("🔎 Verificador de Boletos")
-    tel_buscar = st.text_input("Ingresa tu número de WhatsApp registrado:")
+    st.markdown(
+        """
+        <div style="text-align: center;">
+            <h1 style="color: #ffffff; font-weight: 900; letter-spacing: 2px;">🔎 VERIFICADOR</h1>
+            <h3 style="color: #ff0055; margin-top: -15px; font-weight: 700;">DE NÚMEROS</h3>
+            <p style="color: #a0aabf; font-size: 0.9rem;">Ingresa tu número de teléfono o tu número asignado para consultar tus participaciones</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    if st.button("Buscar Mis Boletos"):
-        if tel_buscar:
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id, nombre FROM rifas")
+    lista_rifas = c.fetchall()
+    conn.close()
+
+    dict_rifas = {r[1]: r[0] for r in lista_rifas}
+
+    st.markdown(
+        '<div class="step-pill">🔹 PASO 1 DE 2</div>', unsafe_allow_html=True
+    )
+    rifa_seleccionada_nom = st.selectbox(
+        "▼ Selecciona la Dinámica",
+        options=list(dict_rifas.keys()),
+        index=0,
+        key="verif_rifa_sel",
+    )
+
+    st.markdown(
+        '<div class="step-pill" style="background:#831843; color:#f472b6;">🔹 PASO 2 DE 2</div>',
+        unsafe_allow_html=True,
+    )
+    tel_input = st.text_input(
+        "Número de Teléfono o #Número",
+        placeholder="Ej: 8091234567 o 00001",
+        key="verif_tel_input",
+    )
+
+    btn_buscar = st.button(
+        "🔍 BUSCAR", use_container_width=True, type="primary"
+    )
+
+    if btn_buscar:
+        if not tel_input:
+            st.warning("Por favor ingresa un número telefónico o número de boleto.")
+        else:
+            rifa_id = dict_rifas[rifa_seleccionada_nom]
+
             conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
             c.execute(
-                "SELECT b.numero, b.estado, r.nombre FROM boletos b JOIN rifas r ON b.rifa_id = r.id WHERE b.usuario_telefono = ?",
-                (tel_buscar,),
+                """
+                SELECT numero, usuario_nombre, usuario_telefono, estado 
+                FROM boletos 
+                WHERE rifa_id = ? AND (usuario_telefono LIKE ? OR numero = ?) AND estado != 'disponible'
+            """,
+                (rifa_id, f"%{tel_input}%", tel_input),
             )
-            mis_boletos = c.fetchall()
+            resultados = c.fetchall()
             conn.close()
 
-            if mis_boletos:
-                st.success(f"Se encontraron {len(mis_boletos)} boletos asociados a tu número:")
-                for num, est, rifa_nom in mis_boletos:
-                    c1, c2, c3 = st.columns(3)
-                    c1.write(f"🎟️ **Boleto:** `{num}`")
-                    c2.write(f"🏆 **Rifa:** {rifa_nom}")
-
-                    if est == "reservado":
-                        c3.markdown("📌 **Estado:** ⏳ *PENDIENTE (En revisión max 24h)*")
-                    elif est == "confirmado":
-                        c3.markdown("📌 **Estado:** ✅ *CONFIRMADO Y VÁLIDO*")
-                    else:
-                        c3.markdown(f"📌 **Estado:** `{est.upper()}`")
-
-                    st.markdown("---")
+            if not resultados:
+                st.markdown(
+                    """
+                    <div style="text-align: center; padding: 40px;">
+                        <h2 style="color: #a0aabf;">🚫 No se encontraron números</h2>
+                        <p style="color: #64748b;">Intenta con otro número de teléfono o número asignado.</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
             else:
-                st.info("No se encontraron registros con este número.")
+                st.markdown(
+                    f"<h4 style='color:#00f0ff;'>Resultados para: {rifa_seleccionada_nom}</h4>",
+                    unsafe_allow_html=True,
+                )
+                cols = st.columns(2)
+
+                for i, row in enumerate(resultados):
+                    num, nom_u, tel_u, est = row
+                    nom_censurado = censurar_nombre(nom_u)
+                    tel_censurado = censurar_telefono(tel_u)
+
+                    with cols[i % 2]:
+                        st.markdown(
+                            f"""
+                            <div class="ticket-card">
+                                <small style="color:#64748b;">{rifa_seleccionada_nom[:18]}...</small>
+                                <div class="ticket-number">{num}</div>
+                                <div class="ticket-user">👤 {nom_censurado}</div>
+                                <div class="ticket-user">📞 {tel_censurado}</div>
+                                <div class="ticket-badge">● {est.upper()}</div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
 # ---------------------------------------------------------
 # OTRAS SECCIONES
