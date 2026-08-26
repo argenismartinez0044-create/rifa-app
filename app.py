@@ -32,7 +32,7 @@ if "esperando_telefono_ia" not in st.session_state:
     st.session_state["esperando_telefono_ia"] = False
 
 # ---------------------------------------------------------
-# ESTILOS CSS PROFESIONALES (TEMA DINÁMICO & NEÓN)
+# ESTILOS CSS PROFESIONALES (LUJO PLATEADO/AZUL CIELO & NEÓN)
 # ---------------------------------------------------------
 bg_color = (
     "#f8fafc"
@@ -52,6 +52,55 @@ st.markdown(
     <style>
     .stApp {{ background: {bg_color} !important; color: {text_color}; }}
     
+    /* Animación de Brillo Metallic-Sky Blue */
+    @keyframes metallic-shine {{
+        0% {{ background-position: 0% 50%; }}
+        50% {{ background-position: 100% 50%; }}
+        100% {{ background-position: 0% 50%; }}
+    }}
+
+    .hero-container {{
+        text-align: center;
+        padding: 30px 15px 15px 15px;
+        margin-bottom: 25px;
+    }}
+
+    /* Primera línea (más pequeña) */
+    .hero-subtitle {{
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        background: linear-gradient(90deg, #e2e8f0 0%, #38bdf8 35%, #ffffff 50%, #7dd3fc 65%, #cbd5e1 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: metallic-shine 4s ease infinite;
+        text-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+        margin-bottom: 8px;
+    }}
+
+    /* Segunda línea (el doble de tamaño) */
+    .hero-title {{
+        font-size: 2.6rem;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        background: linear-gradient(90deg, #94a3b8 0%, #7dd3fc 25%, #ffffff 50%, #38bdf8 75%, #e2e8f0 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: metallic-shine 3.5s ease infinite;
+        text-shadow: 0 0 25px rgba(56, 189, 248, 0.5), 0 0 40px rgba(125, 211, 252, 0.3);
+        margin-top: 0;
+    }}
+
+    /* Media queries para responsividad móvil */
+    @media (max-width: 768px) {{
+        .hero-subtitle {{ font-size: 0.95rem; }}
+        .hero-title {{ font-size: 1.9rem; }}
+    }}
+
     /* Animación Parpadeante */
     @keyframes pulse-gold {{
         0% {{ box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); opacity: 0.8; }}
@@ -239,7 +288,7 @@ init_db()
 liberar_expirados()
 
 # ---------------------------------------------------------
-# BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR HEADER - IMAGEN 1)
+# BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR HEADER)
 # ---------------------------------------------------------
 c_head1, c_head2, c_head3, c_head4, c_head5 = st.columns([2.5, 1, 1, 0.6, 1.5])
 
@@ -247,9 +296,7 @@ with c_head1:
     if os.path.exists("logo.png"):
         st.image("logo.png", width=180)
     else:
-        st.markdown(
-            "### 🎲 **RIFAS SIRIO RD**", unsafe_allow_html=True
-        )
+        st.markdown("### 🎲 **RIFAS SIRIO RD**", unsafe_allow_html=True)
 
 with c_head2:
     if st.button("Rifas", use_container_width=True):
@@ -273,10 +320,23 @@ with c_head5:
         st.session_state["vista_actual"] = "verificador"
         st.rerun()
 
+# ---------------------------------------------------------
+# ENTRADA DE PRESENTACIÓN DE LUJO (ENCABEZADO PRINCIPAL)
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <div class="hero-container">
+        <div class="hero-subtitle">Experiencia exclusiva, la plataforma más lujosa para participar y ganar.</div>
+        <div class="hero-title">Premios extraordinarios garantizados.</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.markdown("---")
 
 # ---------------------------------------------------------
-# VISTA: VERIFICADOR DE BOLETOS (IMAGEN 3)
+# VISTA: VERIFICADOR DE BOLETOS
 # ---------------------------------------------------------
 if st.session_state["vista_actual"] == "verificador":
     st.markdown(
@@ -300,7 +360,6 @@ if st.session_state["vista_actual"] == "verificador":
 
     st.markdown('<div class="verificador-box">', unsafe_allow_html=True)
 
-    # Paso 1: Seleccionar Rifa
     st.markdown("##### 🎛️ Selecciona la rifa")
     rifa_sel_nom = st.selectbox(
         "Selecciona una rifa...",
@@ -308,7 +367,6 @@ if st.session_state["vista_actual"] == "verificador":
         label_visibility="collapsed",
     )
 
-    # Paso 2: Teléfono o # de Boleto
     st.markdown("##### 🎟️ Teléfono o # de boleto")
     c_input, c_btn_buscar = st.columns([3, 1])
 
@@ -572,7 +630,7 @@ elif st.session_state["vista_actual"] == "rifas":
         if st.button(
             "CONFIRMAR COMPRA ✅", type="primary", use_container_width=True
         ):
-            # VALIDACIÓN DETALLADA CAMPO POR CAMPO
+            # VALIDACIÓN DETALLADA CAMPO POR CAMPO INMEDIATA
             faltantes = []
             if not nombre_cliente.strip():
                 faltantes.append("Nombre Completo")
@@ -587,7 +645,7 @@ elif st.session_state["vista_actual"] == "rifas":
 
             if faltantes:
                 st.error(
-                    f"⚠️ **Por favor, completa los siguientes datos para continuar:**\n\n- "
+                    f"⚠️ **Por favor, completa los siguientes datos obligatorios para continuar:**\n\n- "
                     + "\n- ".join(faltantes)
                 )
             else:
@@ -644,7 +702,7 @@ elif st.session_state["vista_actual"] == "rifas":
             st.rerun()
 
 # ---------------------------------------------------------
-# CHAT IA FLOTANTE Y WIDGET INTERACTIVO (IMAGEN 2)
+# CHAT IA FLOTANTE Y WIDGET INTERACTIVO
 # ---------------------------------------------------------
 st.markdown("---")
 if st.button("💬 Chat Virtual - Rifas Sirio RD", type="primary"):
