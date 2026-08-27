@@ -536,13 +536,13 @@ elif seccion == "⚙️ Administración":
         rol = "Propietario" if admin_password == OWNER_PASSWORD else "Administrador"
         st.success(f"Acceso autorizado: **{rol}**")
 
-     t1,t2,t3,t4,t5 = st.tabs([
-    "💳 Pagos pendientes",
-    "🎟️ Boletos",
-    "🎁 Rifas",
-    "⭐ Ofertas",
-    "🏦 Métodos de pago"
-])
+        t1,t2,t3,t4,t5 = st.tabs([
+            "💳 Pagos pendientes",
+            "🎟️ Boletos",
+            "🎁 Rifas",
+            "⭐ Ofertas",
+            "🏦 Métodos de pago"
+ ])
 
         # -------------------------------------------------
         # PAGOS
