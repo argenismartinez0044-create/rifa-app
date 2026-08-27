@@ -125,7 +125,14 @@ def liberar_expirados():
 init_db()
 liberar_expirados()
 
+# =========================================================
+# CONFIGURACIÓN DEL TEMA
+# =========================================================
+if "tema_claro" not in st.session_state:
+    st.session_state["tema_claro"] = False
 
+if "vista_actual" not in st.session_state:
+    st.session_state["vista_actual"] = "rifas"
 # =========================================================
 # FUNCIONES
 # =========================================================
