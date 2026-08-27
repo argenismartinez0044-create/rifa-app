@@ -531,12 +531,19 @@ def abrir_soporte_ia():
 
         with st.chat_message(msg["role"]):
 
-            st.markdown(
-                msg["content"]
-            )
+           # =========================================================
+# VISTA PÚBLICA: VERIFICADOR
+# =========================================================
 
-    entrada = st.chat_input(
-        "Escribe tu duda..."
+if (
+    not es_admin_url
+    and st.session_state.get("vista_actual")
+    == "verificador"
+):
+
+    paso = st.session_state.get(
+        "verificador_paso",
+        1
     )
 
     prompt = entrada or opcion
