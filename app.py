@@ -4,18 +4,24 @@ import datetime
 import hashlib
 import streamlit as st
 
+# -----------------------------------------------------------------------------
+# CONFIGURACIÓN E INICIALIZACIÓN
+# -----------------------------------------------------------------------------
+
+# Definición de constantes
+WHATSAPP_NUMERO = "8090000000"  # Reemplazar por tu número de WhatsApp real
+
 # Configuración de carpetas necesarias
 os.makedirs("comprobantes", exist_ok=True)
 os.makedirs("imagenes_rifas", exist_ok=True)
 
-# -----------------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS Y ADMINISTRACIÓN
-# -----------------------------------------------------------------------------
 
-def inicializar_db_administracion():
-    """Asegura que la tabla de rifas tenga los campos requeridos para gestión dinámica."""
+def inicializar_db():
+    """Inicializa la base de datos y crea las tablas si no existen."""
     conn = sqlite3.connect("rifas.db")
     c = conn.cursor()
+    
+    # Tabla de rifas
     c.execute("""
         CREATE TABLE IF NOT EXISTS rifas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,8 +32,26 @@ def inicializar_db_administracion():
             estado TEXT DEFAULT 'activa'
         )
     """)
+
+    # Tabla de boletos
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS boletos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rifa_id INTEGER NOT NULL,
+            numero INTEGER NOT NULL,
+            estado TEXT DEFAULT 'disponible',
+            usuario_nombre TEXT,
+            usuario_telefono TEXT,
+            metodo_pago TEXT,
+            comprobante TEXT,
+            comprobante_hash TEXT,
+            fecha_reserva DATETIME,
+            FOREIGN KEY (rifa_id) REFERENCES rifas (id)
+        )
+    """)
     conn.commit()
     conn.close()
+
 
 def guardar_imagen_subida(archivo_imagen):
     """Guarda la imagen subida en disco y retorna la ruta."""
@@ -38,15 +62,21 @@ def guardar_imagen_subida(archivo_imagen):
         return path_img
     return None
 
+
+# Inicializar la base de datos
+inicializar_db()
+
+# -----------------------------------------------------------------------------
+# PANEL DE ADMINISTRACIÓN (OPCIONES 2 Y 3 + VALIDACIÓN DE PAGOS)
+# -----------------------------------------------------------------------------
+
 def panel_administrador():
     """Panel de control para el dueño del sistema: Gestión de Rifas y Validaciones."""
     st.title("⚙️ Panel de Administración")
     
     tab_rifas, tab_validaciones = st.tabs(["🎟️ Gestión de Rifas (Opciones 2 y 3)", "💳 Validación de Pagos"])
     
-    # -------------------------------------------------------------------------
-    # TAB 1: OPCIONES 2 Y 3 (CREAR Y GESTIONAR RIFAS / SUBIR FOTOS)
-    # -------------------------------------------------------------------------
+    # --- TAB 1: CREAR Y GESTIONAR RIFAS / SUBIR FOTOS ---
     with tab_rifas:
         st.subheader("➕ Crear Nueva Rifa")
         
@@ -133,9 +163,7 @@ def panel_administrador():
                             st.success("✅ Rifa actualizada correctamente.")
                             st.rerun()
 
-    # -------------------------------------------------------------------------
-    # TAB 2: VALIDACIÓN Y APROBACIÓN DE PAGOS
-    # -------------------------------------------------------------------------
+    # --- TAB 2: VALIDACIÓN Y APROBACIÓN DE PAGOS ---
     with tab_validaciones:
         st.subheader("🔍 Comprobantes por Aprobar")
         
@@ -196,121 +224,136 @@ def panel_administrador():
                     st.markdown("<hr>", unsafe_allow_html=True)
 
 
-# Inicializar la tabla de administración al arrancar
-inicializar_db_administracion()
+# Selector de Navegación en Barra Lateral
+opcion_menu = st.sidebar.radio("Navegación", ["🎟️ Comprar Boletos", "⚙️ Administración"])
 
-# -----------------------------------------------------------------------------
-# FLUJO DE COMPRA DEL CLIENTE (MANTENIDO INTACTO)
-# -----------------------------------------------------------------------------
-
-# Renderizado según la etapa del paso de compra
-paso = st.session_state.get("paso_compra", 1)
-
-if paso == 2:
-    # Lógica previa de procesamiento e inserción
-    path_comp = f"comprobantes/{comp_hash[:10]}_{comprobante_file.name}"
-    with open(path_comp, "wb") as f:
-        f.write(bytes_comprobante)
-
-    ahora = datetime.datetime.now()
-    numeros_asignados = []
-
-    for b_id, b_num in asignados:
-        c.execute(
-            """
-            UPDATE boletos
-            SET estado = 'reservado',
-                usuario_nombre = ?,
-                usuario_telefono = ?,
-                metodo_pago = ?,
-                comprobante = ?,
-                comprobante_hash = ?,
-                fecha_reserva = ?
-            WHERE id = ?
-            """,
-            (
-                nombre_cliente.strip(),
-                telefono_cliente.strip(),
-                st.session_state["banco_pago"],
-                path_comp,
-                comp_hash,
-                ahora,
-                b_id,
-            ),
-        )
-        numeros_asignados.append(b_num)
-
-    conn.commit()
-    conn.close()
-
-    # Guardar datos en session_state para pantalla final
-    st.session_state["resumen_compra"] = {
-        "nombre": nombre_cliente.strip(),
-        "telefono": telefono_cliente.strip(),
-        "rifa": nombre,
-        "boletos": numeros_asignados,
-        "monto": monto_total,
-        "banco": st.session_state["banco_pago"],
-    }
-    st.session_state["paso_compra"] = 3
-    st.rerun()
+if opcion_menu == "⚙️ Administración":
+    panel_administrador()
 else:
-    conn.close()
-    st.error(
-        f"❌ No hay suficientes boletos disponibles. Solo quedan {len(disp)}."
-    )
+    # -------------------------------------------------------------------------
+    # FLUJO DE COMPRA DEL CLIENTE (PASOS DE RESERVA Y PROCESAMIENTO)
+    # -------------------------------------------------------------------------
 
-elif paso == 3:
-    resumen = st.session_state.get("resumen_compra", {})
-    st.balloons()
+    paso = st.session_state.get("paso_compra", 1)
 
-    st.markdown(
-        f"""
-        <div style="background: #090d16; border: 2px solid #22c55e; border-radius: 16px; padding: 25px; text-align: center; max-width: 650px; margin: 0 auto;">
-            <h2 style="color: #22c55e; margin-top: 0;">🎉 ¡RESERVA REGISTRADA CON ÉXITO!</h2>
-            <p style="color: #cbd5e1; font-size: 1rem;">Gracias <strong>{resumen.get('nombre', '')}</strong>, tu comprobante ha sido subido correctamente.</p>
-            <hr style="border-color: #1e293b; margin: 15px 0;">
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">TU SELECCIÓN PARA <strong>{resumen.get('rifa', '').upper()}</strong></p>
-            <div style="background: #0f172a; border-radius: 10px; padding: 15px; margin: 10px 0;">
-                <span style="color: #38bdf8; font-size: 1.4rem; font-weight: bold;">{len(resumen.get('boletos', []))} BOLETOS RESERVADOS</span>
-                <div style="color: #f59e0b; font-weight: bold; margin-top: 5px;">Monto: RD$ {resumen.get('monto', 0):,.2f} ({resumen.get('banco', '')})</div>
-            </div>
-            <div style="margin: 15px 0;">
-                <span style="color: #94a3b8; font-size: 0.85rem;">ESTADO DE TUS BOLETOS:</span><br>
-                <div class="badge-pending" style="margin-top: 5px; font-size: 0.85rem; padding: 6px 14px;">PENDIENTE A CONFIRMAR</div>
-            </div>
-            <p style="color: #64748b; font-size: 0.8rem;">Nuestro equipo verificará tu transferencia. Puedes consultar el estado en cualquier momento con tu teléfono en el <strong>Verificador de Boletos</strong>.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    if paso == 2:
+        # Recuperar variables requeridas de session_state
+        comp_hash = st.session_state.get("comp_hash", "")
+        comprobante_file = st.session_state.get("comprobante_file")
+        bytes_comprobante = st.session_state.get("bytes_comprobante", b"")
+        asignados = st.session_state.get("asignados", [])
+        nombre_cliente = st.session_state.get("nombre_cliente", "")
+        telefono_cliente = st.session_state.get("telefono_cliente", "")
+        nombre = st.session_state.get("nombre_rifa_actual", "")
+        monto_total = st.session_state.get("monto_total", 0.0)
+        disp = st.session_state.get("boletos_disponibles", [])
 
-    st.markdown("<br>", unsafe_allow_html=True)
+        if comprobante_file and len(asignados) > 0:
+            conn = sqlite3.connect("rifas.db")
+            c = conn.cursor()
 
-    col_b1, col_b2 = st.columns(2)
-    with col_b1:
-        # Botón para notificar vía WhatsApp
-        msg_wa = (
-            f"¡Hola! Acabo de realizar una reserva en Sirio Rifas RD.%0A"
-            f"👤 *Nombre:* {resumen.get('nombre', '')}%0A"
-            f"📱 *Teléfono:* {resumen.get('telefono', '')}%0A"
-            f"🎟️ *Rifa:* {resumen.get('rifa', '')}%0A"
-            f"🔢 *Cantidad de boletos:* {len(resumen.get('boletos', []))}%0A"
-            f"💳 *Monto:* RD$ {resumen.get('monto', 0):,.2f} ({resumen.get('banco', '')})"
-        )
+            path_comp = f"comprobantes/{comp_hash[:10]}_{comprobante_file.name}"
+            with open(path_comp, "wb") as f:
+                f.write(bytes_comprobante)
+
+            ahora = datetime.datetime.now()
+            numeros_asignados = []
+
+            for b_id, b_num in asignados:
+                c.execute(
+                    """
+                    UPDATE boletos
+                    SET estado = 'reservado',
+                        usuario_nombre = ?,
+                        usuario_telefono = ?,
+                        metodo_pago = ?,
+                        comprobante = ?,
+                        comprobante_hash = ?,
+                        fecha_reserva = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        nombre_cliente.strip(),
+                        telefono_cliente.strip(),
+                        st.session_state.get("banco_pago", ""),
+                        path_comp,
+                        comp_hash,
+                        ahora,
+                        b_id,
+                    ),
+                )
+                numeros_asignados.append(b_num)
+
+            conn.commit()
+            conn.close()
+
+            # Guardar datos en session_state para pantalla final
+            st.session_state["resumen_compra"] = {
+                "nombre": nombre_cliente.strip(),
+                "telefono": telefono_cliente.strip(),
+                "rifa": nombre,
+                "boletos": numeros_asignados,
+                "monto": monto_total,
+                "banco": st.session_state.get("banco_pago", ""),
+            }
+            st.session_state["paso_compra"] = 3
+            st.rerun()
+        else:
+            st.error(f"❌ No hay suficientes boletos disponibles. Solo quedan {len(disp)}.")
+
+    elif paso == 3:
+        resumen = st.session_state.get("resumen_compra", {})
+        st.balloons()
+
         st.markdown(
             f"""
-            <a href="https://wa.me/1{WHATSAPP_NUMERO}?text={msg_wa}" target="_blank" style="text-decoration: none;">
-                <div style="background: #22c55e; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold;">
-                    📲 NOTIFICAR POR WHATSAPP
+            <div style="background: #090d16; border: 2px solid #22c55e; border-radius: 16px; padding: 25px; text-align: center; max-width: 650px; margin: 0 auto;">
+                <h2 style="color: #22c55e; margin-top: 0;">🎉 ¡RESERVA REGISTRADA CON ÉXITO!</h2>
+                <p style="color: #cbd5e1; font-size: 1rem;">Gracias <strong>{resumen.get('nombre', '')}</strong>, tu comprobante ha sido subido correctamente.</p>
+                <hr style="border-color: #1e293b; margin: 15px 0;">
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">TU SELECCIÓN PARA <strong>{resumen.get('rifa', '').upper()}</strong></p>
+                <div style="background: #0f172a; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                    <span style="color: #38bdf8; font-size: 1.4rem; font-weight: bold;">{len(resumen.get('boletos', []))} BOLETOS RESERVADOS</span>
+                    <div style="color: #f59e0b; font-weight: bold; margin-top: 5px;">Monto: RD$ {resumen.get('monto', 0):,.2f} ({resumen.get('banco', '')})</div>
                 </div>
-            </a>
+                <div style="margin: 15px 0;">
+                    <span style="color: #94a3b8; font-size: 0.85rem;">ESTADO DE TUS BOLETOS:</span><br>
+                    <div class="badge-pending" style="margin-top: 5px; font-size: 0.85rem; padding: 6px 14px;">PENDIENTE A CONFIRMAR</div>
+                </div>
+                <p style="color: #64748b; font-size: 0.8rem;">Nuestro equipo verificará tu transferencia. Puedes consultar el estado en cualquier momento con tu teléfono en el <strong>Verificador de Boletos</strong>.</p>
+            </div>
             """,
             unsafe_allow_html=True,
         )
 
-    with col_b2:
-        if st.button("🔄 VOLVER AL INICIO", use_container_width=True):
-            st.session_state["paso_compra"] = 0
-            st.session_state["vista_actual"] = "rifas"
-            st.rerun()
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            msg_wa = (
+                f"¡Hola! Acabo de realizar una reserva en Sirio Rifas RD.%0A"
+                f"👤 *Nombre:* {resumen.get('nombre', '')}%0A"
+                f"📱 *Teléfono:* {resumen.get('telefono', '')}%0A"
+                f"🎟️ *Rifa:* {resumen.get('rifa', '')}%0A"
+                f"🔢 *Cantidad de boletos:* {len(resumen.get('boletos', []))}%0A"
+                f"💳 *Monto:* RD$ {resumen.get('monto', 0):,.2f} ({resumen.get('banco', '')})"
+            )
+            st.markdown(
+                f"""
+                <a href="https://wa.me/1{WHATSAPP_NUMERO}?text={msg_wa}" target="_blank" style="text-decoration: none;">
+                    <div style="background: #22c55e; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold;">
+                        📲 NOTIFICAR POR WHATSAPP
+                    </div>
+                </a>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with col_b2:
+            if st.button("🔄 VOLVER AL INICIO", use_container_width=True):
+                st.session_state["paso_compra"] = 0
+                st.session_state["vista_actual"] = "rifas"
+                st.rerun()
+
+    else:
+        st.info("🎟️ Selecciona una rifa para iniciar tu compra.")
