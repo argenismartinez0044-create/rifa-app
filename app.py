@@ -535,10 +535,10 @@ def abrir_soporte_ia():
 # VISTA PÚBLICA: VERIFICADOR
 # =========================================================
 
-if (
-    not es_admin_url
-    and st.session_state.get("vista_actual")
-    == "verificador"
+    if (
+       not es_admin_url
+       and st.session_state.get("vista_actual")
+       == "verificador"
 ):
 
     paso = st.session_state.get(
