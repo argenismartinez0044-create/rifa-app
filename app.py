@@ -257,16 +257,33 @@ def abrir_soporte_ia():
 # =========================================================
 # ESTILO Y NAVEGACIÓN
 # =========================================================
+# =========================================================
+# ESTILO Y NAVEGACIÓN POR URL (?admin=true)
+# =========================================================
 st.markdown("""
 <style>
 .stApp { background:linear-gradient(135deg,#0b0d17 0%,#171b2e 50%,#080910 100%) !important; color:#fff; }
 </style>
 """, unsafe_allow_html=True)
 
-seccion = st.sidebar.radio("Navegación", [
+# Detectar si viene ?admin=true en la URL
+query_params = st.query_params
+es_admin_url = query_params.get("admin", "").lower() in ["true", "1"]
+
+# Menú base para todos los usuarios
+opciones_menu = [
     "🏠 Inicio & Catálogo", "🔎 Verificador de boletos",
-    "❓ Cómo jugar", "🤖 Soporte IA", "🏆 Ganadores", "⚙️ Administración"
-])
+    "❓ Cómo jugar", "🤖 Soporte IA", "🏆 Ganadores"
+]
+
+# Agregar Administración al menú lateral SOLO si entra con ?admin=true
+if es_admin_url:
+    opciones_menu.append("⚙️ Administración")
+
+# Seleccionar vista por defecto (Administración si viene con la URL especial, Inicio si es público)
+index_defecto = len(opciones_menu) - 1 if es_admin_url else 0
+
+seccion = st.sidebar.radio("Navegación", opciones_menu, index=index_defecto)
 st.sidebar.markdown("---")
 if st.sidebar.button("🤖 Abrir Chat de Soporte IA"):
     abrir_soporte_ia()
