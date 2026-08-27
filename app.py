@@ -62,7 +62,6 @@ def init_db():
     """)
 
     # Métodos de pago administrables desde el panel.
-    # Se agregan sin borrar ni modificar los datos existentes.
     c.execute("""
         CREATE TABLE IF NOT EXISTS metodos_pago (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,7 +87,6 @@ def init_db():
         ])
 
     # Solo crea las 2 rifas originales si la base está vacía.
-    # Se eliminó el UPDATE que forzaba sus precios/nombres en cada ejecución.
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
         iniciales = [
@@ -404,7 +402,7 @@ if seccion == "🏠 Inicio & Catálogo":
                 st.write(f"**Tipo:** {tipo_cuenta}")
                 st.write(f"**Titular:** {titular}")
                 st.write("**Número de cuenta:**")
-                st.code(str(cuenta), language=None)  # botón COPIAR funcional de Streamlit
+                st.code(str(cuenta), language=None)
                 st.caption("💡 Usa el icono de copiar que aparece en el recuadro para copiar el número de cuenta.")
 
                 st.markdown(f"### 💰 Total a pagar: **RD$ {st.session_state['cant_boletos']*precio:.2f}**")
@@ -528,7 +526,6 @@ elif seccion == "⚙️ Administración":
 
     admin_password = st.text_input("Contraseña de administrador", type="password")
 
-    # Recomendado: guardar estas dos claves en Streamlit Secrets.
     ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin123")
     OWNER_PASSWORD = st.secrets.get("OWNER_PASSWORD", "sirio2026")
 
@@ -536,13 +533,13 @@ elif seccion == "⚙️ Administración":
         rol = "Propietario" if admin_password == OWNER_PASSWORD else "Administrador"
         st.success(f"Acceso autorizado: **{rol}**")
 
-        t1,t2,t3,t4,t5 = st.tabs([
+        t1, t2, t3, t4, t5 = st.tabs([
             "💳 Pagos pendientes",
             "🎟️ Boletos",
             "🎁 Rifas",
             "⭐ Ofertas",
             "🏦 Métodos de pago"
- ])
+        ])
 
         # -------------------------------------------------
         # PAGOS
@@ -718,221 +715,153 @@ elif seccion == "⚙️ Administración":
                 st.markdown("#### ➕ Oferta manual")
                 with st.form("oferta_manual"):
                     numero = st.text_input("Número de boleto, ejemplo 00025")
-                    premio = st.text_input("Premio", placeholder="RD$ 500 en efectivo")
-                    valor = st.number_input("Valor del premio (RD$)", min_value=0.0, value=500.0, step=50.0)
-                    guardar_oferta = st.form_submit_button("⭐ GUARDAR OFERTA", use_container_width=True)
+                    premio = st.text_input("Premio", placeholder="RD$ 1,000 en efectivo")
+                    valor = st.number_input("Valor estimado del premio (RD$)", min_value=0.0, value=0.0, step=100.0)
+                    guardar_oferta = st.form_submit_button("💾 GUARDAR OFERTA MANUAL")
 
                 if guardar_oferta:
-                    numero = numero.strip().zfill(5)
-                    conn = conectar()
-                    existe = conn.execute("SELECT id FROM boletos WHERE rifa_id=? AND numero=?", (rid,numero)).fetchone()
-                    if not existe:
-                        conn.close()
-                        st.error("Ese número no existe.")
+                    if not numero.strip() or not premio.strip():
+                        st.error("Completa el número y el premio.")
                     else:
+                        num_fmt = f"{int(numero):05d}"
+                        conn = conectar()
                         try:
                             conn.execute("""
-                                INSERT INTO ofertas(rifa_id,numero,premio,valor_premio,estado)
-                                VALUES(?,?,?,?, 'disponible')
-                            """, (rid,numero,premio.strip(),float(valor)))
+                                INSERT INTO ofertas (rifa_id, numero, premio, valor_premio, estado)
+                                VALUES (?, ?, ?, ?, 'disponible')
+                                ON CONFLICT(rifa_id, numero) DO UPDATE SET
+                                premio=excluded.premio, valor_premio=excluded.valor_premio
+                            """, (rid, num_fmt, premio.strip(), float(valor)))
                             conn.commit()
-                            conn.close()
-                            st.success("Oferta guardada.")
+                            st.success(f"Oferta asignada al boleto `{num_fmt}`.")
                             st.rerun()
-                        except sqlite3.IntegrityError:
-                            conn.rollback()
+                        except Exception as e:
+                            st.error(f"Error al guardar oferta: {e}")
+                        finally:
                             conn.close()
-                            st.error("Ese número ya tiene una oferta.")
 
-                st.markdown("#### 🎲 Generar ofertas al azar")
-                with st.form("ofertas_azar"):
-                    cantidad_azar = st.number_input("Cantidad de números", min_value=1, max_value=1000, value=5, step=1)
-                    premios = st.text_area(
-                        "Premios, uno por línea con formato: descripción | valor",
-                        value="RD$ 1,000 en efectivo | 1000\nRD$ 500 en efectivo | 500\nRD$ 250 en efectivo | 250"
-                    )
-                    generar = st.form_submit_button("🎲 GENERAR NÚMEROS AL AZAR", use_container_width=True)
+                st.markdown("---")
+                st.markdown("#### 🎲 Generar ofertas aleatorias")
+                with st.form("ofertas_random"):
+                    cant_random = st.number_input("Cantidad de ofertas a generar", min_value=1, max_value=50, value=5, step=1)
+                    premio_base = st.text_input("Premio base / Descripción", value="Bono Sorpresa RD$ 500")
+                    valor_base = st.number_input("Valor individual por oferta (RD$)", min_value=0.0, value=500.0, step=50.0)
+                    gen_random = st.form_submit_button("🎲 GENERAR OFERTAS ALEATORIAS")
 
-                if generar:
-                    filas_premio = [x.strip() for x in premios.splitlines() if x.strip()]
-                    lista_premios = []
-                    for fila in filas_premio:
-                        partes = [x.strip() for x in fila.split("|", 1)]
-                        descripcion = partes[0]
-                        try:
-                            valor_num = float(partes[1].replace(",", "")) if len(partes) == 2 else 0.0
-                        except ValueError:
-                            valor_num = 0.0
-                        lista_premios.append((descripcion, valor_num))
+                if gen_random:
+                    conn = conectar()
+                    cur = conn.cursor()
+                    disponibles = cur.execute(
+                        "SELECT numero FROM boletos WHERE rifa_id=? AND estado='disponible'", (rid,)
+                    ).fetchall()
 
-                    if not lista_premios:
-                        st.error("Escribe al menos un premio.")
+                    if len(disponibles) < cant_random:
+                        st.error("No hay suficientes boletos disponibles para asignar esas ofertas.")
                     else:
-                        conn = conectar()
-                        cur = conn.cursor()
-                        cur.execute("""
-                            SELECT b.numero FROM boletos b
-                            LEFT JOIN ofertas o ON o.rifa_id=b.rifa_id AND o.numero=b.numero
-                            WHERE b.rifa_id=? AND o.id IS NULL
-                            ORDER BY RANDOM() LIMIT ?
-                        """, (rid,int(cantidad_azar)))
-                        numeros = [x[0] for x in cur.fetchall()]
-                        for i,num in enumerate(numeros):
-                            descripcion, valor_num = lista_premios[i % len(lista_premios)]
+                        seleccionados = random.sample([d[0] for d in disponibles], int(cant_random))
+                        for num in seleccionados:
                             cur.execute("""
-                                INSERT INTO ofertas(rifa_id,numero,premio,valor_premio,estado)
-                                VALUES(?,?,?,?, 'disponible')
-                            """, (rid,num,descripcion,float(valor_num)))
+                                INSERT INTO ofertas (rifa_id, numero, premio, valor_premio, estado)
+                                VALUES (?, ?, ?, ?, 'disponible')
+                                ON CONFLICT(rifa_id, numero) DO UPDATE SET
+                                premio=excluded.premio, valor_premio=excluded.valor_premio
+                            """, (rid, num, premio_base.strip(), float(valor_base)))
                         conn.commit()
-                        conn.close()
-                        st.success(f"Se generaron {len(numeros)} números de oferta al azar.")
-                        if numeros: st.write("Números:", ", ".join(numeros))
+                        st.success(f"Se generaron {cant_random} ofertas aleatorias con éxito.")
                         st.rerun()
+                    conn.close()
 
-                st.markdown("#### 📋 Ofertas existentes")
+                st.markdown("---")
+                st.markdown("#### 📜 Ofertas registradas para esta rifa")
                 conn = conectar()
                 ofertas = conn.execute("""
-                    SELECT id,numero,premio,valor_premio,estado
+                    SELECT id, numero, premio, valor_premio, estado
                     FROM ofertas WHERE rifa_id=? ORDER BY numero
                 """, (rid,)).fetchall()
                 conn.close()
 
-                for oid,num,premio,valor,estado in ofertas:
-                    a,b,c,d = st.columns([1,2,1,1])
-                    a.write(f"🎟️ **{num}**")
-                    b.write(premio)
-                    c.write(f"RD$ {valor:.2f}" if valor else "Valor no indicado")
-                    if d.button("🗑️ Eliminar", key=f"del_oferta_{oid}"):
-                        conn = conectar()
-                        conn.execute("DELETE FROM ofertas WHERE id=?", (oid,))
-                        conn.commit()
-                        conn.close()
-                        st.rerun()
-
-        # -------------------------------------------------
-        # MÉTODOS DE PAGO: AGREGAR, EDITAR, ACTIVAR/DESACTIVAR
-        # -------------------------------------------------
-        with t5:
-            st.subheader("🏦 Métodos de pago")
-            st.caption("Agrega bancos o métodos nuevos sin tocar las rifas ni los boletos existentes.")
-
-            metodos_admin = obtener_metodos_pago(False)
-
-            for mid, nombre_m, titular_m, tipo_m, cuenta_m, imagen_m, activo_m in metodos_admin:
-                with st.expander(f"{'🟢' if activo_m else '⚪'} {nombre_m}"):
-                    with st.form(f"editar_metodo_{mid}"):
-                        nuevo_nombre = st.text_input("Nombre del banco/método", value=nombre_m)
-                        nuevo_titular = st.text_input("Titular", value=titular_m)
-                        nuevo_tipo = st.text_input("Tipo de cuenta", value=tipo_m)
-                        nueva_cuenta = st.text_input("Número de cuenta", value=cuenta_m)
-                        nueva_imagen = st.file_uploader(
-                            "Cambiar logo (opcional)",
-                            type=["png","jpg","jpeg"],
-                            key=f"logo_metodo_{mid}"
-                        )
-                        activo = st.checkbox("Método activo para los clientes", value=bool(activo_m))
-                        guardar_metodo = st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True)
-
-                    if guardar_metodo:
-                        if not nuevo_nombre.strip() or not nuevo_titular.strip() or not nueva_cuenta.strip():
-                            st.error("Nombre, titular y número de cuenta son obligatorios.")
-                        else:
-                            ruta_logo = imagen_m or ""
-                            if nueva_imagen:
-                                ruta_logo = guardar_imagen(nueva_imagen, "metodos_pago", nuevo_nombre)
-
+                if not ofertas:
+                    st.info("No hay ofertas configuradas para esta rifa.")
+                else:
+                    for oid, num, prem, val, est in ofertas:
+                        c1, c2, c3, c4 = st.columns([1, 3, 2, 1])
+                        c1.write(f"🎟️ `{num}`")
+                        c2.write(f"🎁 {prem}")
+                        c3.write(f"💰 RD$ {val:.2f} ({est})")
+                        if c4.button("🗑️", key=f"del_oferta_{oid}"):
                             conn = conectar()
-                            try:
-                                conn.execute("""
-                                    UPDATE metodos_pago
-                                    SET nombre=?, titular=?, tipo_cuenta=?, numero_cuenta=?, imagen=?, activo=?
-                                    WHERE id=?
-                                """, (
-                                    nuevo_nombre.strip(),
-                                    nuevo_titular.strip(),
-                                    nuevo_tipo.strip() or "Ahorros",
-                                    nueva_cuenta.strip(),
-                                    ruta_logo,
-                                    1 if activo else 0,
-                                    mid
-                                ))
-                                conn.commit()
-                                st.success("Método de pago actualizado.")
-                            except sqlite3.IntegrityError:
-                                conn.rollback()
-                                st.error("Ya existe otro método con ese nombre.")
-                            finally:
-                                conn.close()
+                            conn.execute("DELETE FROM ofertas WHERE id=?", (oid,))
+                            conn.commit()
+                            conn.close()
                             st.rerun()
 
-                    if st.button(
-                        "🗑️ ELIMINAR MÉTODO",
-                        key=f"eliminar_metodo_{mid}",
-                        use_container_width=True
-                    ):
-                        conn = conectar()
-                        usos = conn.execute(
-                            "SELECT COUNT(*) FROM boletos WHERE metodo_pago=?",
-                            (nombre_m,)
-                        ).fetchone()[0]
+        # -------------------------------------------------
+        # MÉTODOS DE PAGO
+        # -------------------------------------------------
+        with t5:
+            st.subheader("🏦 Administrar Métodos de Pago")
 
-                        if usos:
-                            # No borramos el registro si tiene historial de pagos.
-                            conn.execute(
-                                "UPDATE metodos_pago SET activo=0 WHERE id=?",
-                                (mid,)
-                            )
-                            conn.commit()
-                            conn.close()
-                            st.warning("El método tiene historial de pagos, por seguridad se desactivó en vez de borrarlo.")
-                        else:
-                            conn.execute("DELETE FROM metodos_pago WHERE id=?", (mid,))
-                            conn.commit()
-                            conn.close()
-                            st.success("Método de pago eliminado.")
+            metodos = obtener_metodos_pago(activos_solo=False)
+            for m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img, m_activo in metodos:
+                with st.expander(f"🏦 {m_nombre} ({'Activo' if m_activo else 'Inactivo'})"):
+                    with st.form(f"form_mp_{m_id}"):
+                        nom = st.text_input("Nombre de la Institución/Banco", value=m_nombre)
+                        tit = st.text_input("Titular de la Cuenta", value=m_titular)
+                        tipo = st.selectbox("Tipo de Cuenta", ["Ahorros", "Corriente"], index=0 if m_tipo == "Ahorros" else 1)
+                        num = st.text_input("Número de Cuenta", value=m_cuenta)
+                        act = st.checkbox("Método Activo", value=bool(m_activo))
+                        img_file = st.file_uploader("Actualizar Logo (opcional)", type=["png","jpg","jpeg"], key=f"img_mp_{m_id}")
+
+                        guardar_mp = st.form_submit_button("💾 GUARDAR CAMBIOS")
+
+                    if guardar_mp:
+                        conn = conectar()
+                        ruta_img = m_img
+                        if img_file:
+                            ruta_img = guardar_imagen(img_file, "bancos", nom)
+                        conn.execute("""
+                            UPDATE metodos_pago
+                            SET nombre=?, titular=?, tipo_cuenta=?, numero_cuenta=?, imagen=?, activo=?
+                            WHERE id=?
+                        """, (nom.strip(), tit.strip(), tipo, num.strip(), ruta_img, 1 if act else 0, m_id))
+                        conn.commit()
+                        conn.close()
+                        st.success("Método de pago actualizado.")
+                        st.rerun()
+
+                    if st.button(f"🗑️ Eliminar {m_nombre}", key=f"del_mp_{m_id}"):
+                        conn = conectar()
+                        conn.execute("DELETE FROM metodos_pago WHERE id=?", (m_id,))
+                        conn.commit()
+                        conn.close()
+                        st.success("Método de pago eliminado.")
                         st.rerun()
 
             st.markdown("---")
-            st.subheader("➕ Agregar nuevo método de pago")
-
+            st.subheader("➕ Agregar Nuevo Método de Pago")
             with st.form("nuevo_metodo_pago"):
-                nombre_pago = st.text_input("Banco / método de pago", placeholder="Ej.: Banco BHD")
-                titular_pago = st.text_input("Titular de la cuenta")
-                tipo_pago = st.text_input("Tipo de cuenta", value="Ahorros")
-                cuenta_pago = st.text_input("Número de cuenta")
-                logo_pago = st.file_uploader(
-                    "Logo del banco/método",
-                    type=["png","jpg","jpeg"],
-                    key="nuevo_logo_metodo"
-                )
-                crear_metodo = st.form_submit_button("➕ AGREGAR MÉTODO DE PAGO", use_container_width=True)
+                n_nombre = st.text_input("Nombre del Banco/Plataforma")
+                n_titular = st.text_input("Nombre del Titular")
+                n_tipo = st.selectbox("Tipo de Cuenta", ["Ahorros", "Corriente"])
+                n_cuenta = st.text_input("Número de Cuenta")
+                n_img = st.file_uploader("Logo/Imagen del Banco", type=["png","jpg","jpeg"], key="nueva_img_mp")
+                crear_mp = st.form_submit_button("🚀 CREAR MÉTODO DE PAGO")
 
-            if crear_metodo:
-                if not nombre_pago.strip() or not titular_pago.strip() or not cuenta_pago.strip():
-                    st.error("Completa banco/método, titular y número de cuenta.")
+            if crear_mp:
+                if not n_nombre.strip() or not n_titular.strip() or not n_cuenta.strip():
+                    st.error("Completa todos los campos obligatorios.")
                 else:
-                    ruta_logo = guardar_imagen(logo_pago, "metodos_pago", nombre_pago) if logo_pago else ""
+                    ruta_img = guardar_imagen(n_img, "bancos", n_nombre) if n_img else ""
                     conn = conectar()
                     try:
                         conn.execute("""
-                            INSERT INTO metodos_pago
-                            (nombre,titular,tipo_cuenta,numero_cuenta,imagen,activo)
-                            VALUES (?,?,?,?,?,1)
-                        """, (
-                            nombre_pago.strip(),
-                            titular_pago.strip(),
-                            tipo_pago.strip() or "Ahorros",
-                            cuenta_pago.strip(),
-                            ruta_logo
-                        ))
+                            INSERT INTO metodos_pago (nombre, titular, tipo_cuenta, numero_cuenta, imagen, activo)
+                            VALUES (?, ?, ?, ?, ?, 1)
+                        """, (n_nombre.strip(), n_titular.strip(), n_tipo, n_cuenta.strip(), ruta_img))
                         conn.commit()
-                        st.success("🎉 Nuevo método de pago agregado y activado.")
+                        st.success("Nuevo método de pago agregado correctamente.")
+                        st.rerun()
                     except sqlite3.IntegrityError:
-                        conn.rollback()
-                        st.error("Ese método de pago ya existe. Puedes editarlo arriba.")
+                        st.error("Ya existe un método de pago con ese nombre.")
                     finally:
                         conn.close()
-                    st.rerun()
-
-    elif admin_password:
-        st.error("Contraseña incorrecta.")
