@@ -23,7 +23,6 @@ def toggle_theme():
 
 is_dark = st.session_state["theme_mode"] == "dark"
 
-# Paleta de colores y fondo dinámico
 bg_style = """
     background-color: #0b0f17;
     background-image: 
@@ -43,7 +42,7 @@ bg_style = """
 text_color = "#FFFFFF" if is_dark else "#0f172a"
 
 # =========================================================
-# ESTILOS CSS PERSONALIZADOS Y TARJETAS DE BANCOS COMPACTAS
+# ESTILOS CSS PERSONALIZADOS (BANCOS Y BARRA)
 # =========================================================
 st.markdown(f"""
 <style>
@@ -69,14 +68,6 @@ st.markdown(f"""
         box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }}
 
-    .bcrd-seal {{
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        width: 50px;
-        opacity: 0.9;
-    }}
-
     .badge-pop {{
         background: linear-gradient(90deg, #f5c518, #ff8c00);
         color: #000;
@@ -86,40 +77,61 @@ st.markdown(f"""
         font-size: 11px;
     }}
 
-    /* Estilos específicos ÚNICAMENTE para ocultar el botón transparente de las tarjetas de banco */
+    /* Contenedor interactivo para los botones de banco */
+    .bank-card-wrapper {{
+        position: relative;
+        width: 135px;
+        height: 110px;
+        margin: 0 auto;
+    }}
+
+    /* Superposición transparente táctil y de clic sobre el 100% de la tarjeta */
+    .bank-card-wrapper div[data-testid="stButton"] {{
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 10 !important;
+    }}
+
     .bank-card-wrapper div[data-testid="stButton"] button {{
         background: transparent !important;
         border: none !important;
         color: transparent !important;
         box-shadow: none !important;
-        height: 110px !important;
-        width: 135px !important;
+        width: 100% !important;
+        height: 100% !important;
         padding: 0 !important;
+        cursor: pointer !important;
     }}
 
-    /* Estilos visuales exactos a la Imagen 2 para las tarjetas de banco */
+    /* Apariencia visual de la tarjeta de banco */
     .bank-card-btn {{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 135px;
+        height: 110px;
         background-color: #131927;
         border: 1.5px solid #2a364f;
         border-radius: 12px;
         padding: 12px 8px;
-        width: 135px;
-        height: 110px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         transition: all 0.2s ease-in-out;
+        z-index: 1;
+        box-sizing: border-box;
     }}
-    .bank-card-btn:hover {{
-        border-color: #38bdf8;
-        background-color: #1e293b;
-    }}
+
     .bank-card-selected {{
         border: 2px solid #38bdf8 !important;
         background-color: #172554 !important;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
     }}
+
     .bank-icon-img {{
         width: 42px;
         height: 42px;
@@ -127,6 +139,7 @@ st.markdown(f"""
         border-radius: 8px;
         margin-bottom: 8px;
     }}
+
     .bank-title-text {{
         color: #e2e8f0;
         font-size: 11px;
@@ -136,7 +149,7 @@ st.markdown(f"""
         text-transform: uppercase;
     }}
 
-    /* Indicador de porcentaje */
+    /* Indicador de porcentaje simple */
     .progress-text {{
         display: flex;
         justify-content: space-between;
@@ -149,7 +162,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# BASE DE DATOS
+# BASE DE DATOS Y LÓGICA DE PROGRESO
 # =========================================================
 
 def conectar():
@@ -244,19 +257,19 @@ def obtener_metodos_pago():
 def normalizar_telefono(telefono):
     return telefono.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").replace("+", "").strip()
 
-def obtener_progreso_rifa(rifa_id, total_boletos):
+def obtener_porcentaje_rifa(rifa_id, total_boletos=10000):
     conn = conectar()
     vendidos = conn.execute("SELECT COUNT(*) FROM boletos WHERE rifa_id=? AND estado!='disponible'", (rifa_id,)).fetchone()[0]
     conn.close()
     
     total = total_boletos if total_boletos and total_boletos > 0 else 10000
     porcentaje = min(100.0, (vendidos / total) * 100)
-    return vendidos, total, porcentaje
+    return porcentaje
 
 init_db()
 
 # =========================================================
-# ESTADOS Y MODALES
+# ESTADOS Y DIÁLOGOS
 # =========================================================
 
 if "active_dialog" not in st.session_state:
@@ -305,14 +318,14 @@ def modal_combos():
 
                 if st.button(f"Elegir {pkg['nombre']}", key=f"btn_pkg_{idx}", use_container_width=True):
                     st.session_state["selected_boletos_qty"] = pkg["boletos"]
-                    st.session_state["banco_activo_id"] = None  # Banco oculto al inicio
+                    st.session_state["banco_activo_id"] = None
                     st.session_state["active_dialog"] = "pago"
                     st.rerun()
 
     st.divider()
     if st.button("✏️ ELEGIR CANTIDAD PERSONALIZADA", use_container_width=True):
         st.session_state["selected_boletos_qty"] = min_boletos
-        st.session_state["banco_activo_id"] = None  # Banco oculto al inicio
+        st.session_state["banco_activo_id"] = None
         st.session_state["active_dialog"] = "pago"
         st.rerun()
 
@@ -360,7 +373,7 @@ def modal_pago_detalles():
     st.divider()
 
     # =========================================================
-    # SELECCIÓN DE BANCOS CON EL DISEÑO EXACTO A LA IMAGEN 2
+    # BOTONES INTERACTIVOS DE MÉTODOS DE PAGO
     # =========================================================
     st.markdown("#### Método de Pago *")
 
@@ -376,7 +389,7 @@ def modal_pago_detalles():
         with cols_bancos[idx]:
             st.markdown('<div class="bank-card-wrapper">', unsafe_allow_html=True)
             
-            # Convertir imagen a Base64 para incrustarla limpiamente
+            # Imagen en base64
             if m_img and os.path.exists(m_img):
                 with open(m_img, "rb") as img_f:
                     encoded = base64.b64encode(img_f.read()).decode()
@@ -384,24 +397,21 @@ def modal_pago_detalles():
             else:
                 img_element = '<div style="font-size:28px; margin-bottom:4px;">🏦</div>'
 
-            # Botón Streamlit invisible para capturar clic sobre la tarjeta de banco
+            # Botón Streamlit interactivo (recibe el clic en toda la superficie)
             if st.button(" ", key=f"btn_card_{m_id}"):
                 st.session_state["banco_activo_id"] = m_id
                 st.rerun()
 
-            # Renderizado visual compacto (Estilo tarjeta idéntico a la imagen 2)
             selected_class = "bank-card-selected" if es_seleccionado else ""
             st.markdown(f"""
-            <div style="margin-top: -110px; pointer-events: none;">
-                <div class="bank-card-btn {selected_class}">
-                    {img_element}
-                    <span class="bank-title-text">{m_nombre}<br><small style="font-size:9px; color:#94a3b8;">({m_tipo.upper()})</small></span>
-                </div>
+            <div class="bank-card-btn {selected_class}">
+                {img_element}
+                <span class="bank-title-text">{m_nombre}<br><small style="font-size:9px; color:#94a3b8;">({m_tipo.upper()})</small></span>
             </div>
             """, unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-    # La información bancaria está OCULTA por defecto y SOLO aparece al presionar una tarjeta
+    # La información bancaria se muestra al presionar la tarjeta activa
     if st.session_state.get("banco_activo_id"):
         banco_sel = next((m for m in metodos if m[0] == st.session_state["banco_activo_id"]), None)
         if banco_sel:
@@ -558,7 +568,7 @@ with st.expander("❓ ¿CÓMO JUGAR? — 5 pasos simples para participar y ganar
 st.divider()
 
 # =========================================================
-# CATÁLOGO DE RIFAS ACTIVAS CON BARRA DE PROGRESO DE 0% A 100%
+# CATÁLOGO DE RIFAS ACTIVAS (SOLO PORCENTAJE 0% A 100%)
 # =========================================================
 
 st.markdown('<div id="rifas-activas"></div>', unsafe_allow_html=True)
@@ -572,7 +582,7 @@ cols_rifas = st.columns(2)
 for idx, r in enumerate(rifas):
     r_id, r_nombre, r_categoria, r_precio, r_min, r_total, r_img, r_fecha = r
     
-    vendidos, total, porcentaje = obtener_progreso_rifa(r_id, r_total)
+    porcentaje = obtener_porcentaje_rifa(r_id, r_total)
 
     with cols_rifas[idx % 2]:
         with st.container(border=True):
@@ -583,16 +593,16 @@ for idx, r in enumerate(rifas):
             st.caption(f"Categoría: {r_categoria} | Sorteo: {r_fecha}")
             st.markdown(f"**Precio por boleto:** <span style='color:#f5c518; font-size:18px;'>RD$ {r_precio:,.2f}</span>", unsafe_allow_html=True)
 
-            # Barra de Progreso de 0% a 100% (10,000 boletos)
+            # Barra de Progreso mostrando ÚNICAMENTE del 0% al 100%
             st.markdown(f"""
             <div class="progress-text">
                 <span>Progreso de venta</span>
-                <span>{porcentaje:.2f}% ({vendidos:,} / {total:,} boletos)</span>
+                <span>{porcentaje:.2f}%</span>
             </div>
             """, unsafe_allow_html=True)
             st.progress(porcentaje / 100.0)
 
-            st.write("") # Espaciado
+            st.write("")
 
             # Botón JUGAR visible y totalmente funcional
             if st.button("🎮 JUGAR", key=f"btn_jugar_{r_id}", use_container_width=True):
