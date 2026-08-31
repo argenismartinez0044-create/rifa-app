@@ -86,8 +86,8 @@ st.markdown(f"""
         font-size: 11px;
     }}
 
-    /* Estilos para ocultar el botón transparente de Streamlit */
-    div[data-testid="stButton"] button {{
+    /* Estilos específicos ÚNICAMENTE para ocultar el botón transparente de las tarjetas de banco */
+    .bank-card-wrapper div[data-testid="stButton"] button {{
         background: transparent !important;
         border: none !important;
         color: transparent !important;
@@ -134,6 +134,16 @@ st.markdown(f"""
         text-align: center;
         line-height: 1.2;
         text-transform: uppercase;
+    }}
+
+    /* Indicador de porcentaje */
+    .progress-text {{
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: bold;
+        color: #f5c518;
+        margin-bottom: 4px;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -199,8 +209,8 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
         iniciales = [
-            ("PlayStation 5 Pro", "JUEGOS", 5.0, 10, 100000, "play.jpg", "Fecha pendiente"),
-            ("5 iPhone 17 Pro Max", "TECNOLOGÍA", 15.0, 10, 100000, "iphone.jpg", "Al vender el 80%"),
+            ("PlayStation 5 Pro", "JUEGOS", 5.0, 10, 10000, "play.jpg", "Fecha pendiente"),
+            ("5 iPhone 17 Pro Max", "TECNOLOGÍA", 15.0, 10, 10000, "iphone.jpg", "Al vender el 80%"),
         ]
         for rifa in iniciales:
             c.execute("""
@@ -208,7 +218,7 @@ def init_db():
                 VALUES (?,?,?,?,?,?,?,1)
             """, rifa)
         for rifa_id in (1, 2):
-            numeros = [(rifa_id, f"{i:05d}") for i in range(1, 100001)]
+            numeros = [(rifa_id, f"{i:05d}") for i in range(1, 10001)]
             c.executemany("INSERT INTO boletos (rifa_id, numero) VALUES (?,?)", numeros)
 
     conn.commit()
@@ -233,6 +243,15 @@ def obtener_metodos_pago():
 
 def normalizar_telefono(telefono):
     return telefono.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").replace("+", "").strip()
+
+def obtener_progreso_rifa(rifa_id, total_boletos):
+    conn = conectar()
+    vendidos = conn.execute("SELECT COUNT(*) FROM boletos WHERE rifa_id=? AND estado!='disponible'", (rifa_id,)).fetchone()[0]
+    conn.close()
+    
+    total = total_boletos if total_boletos and total_boletos > 0 else 10000
+    porcentaje = min(100.0, (vendidos / total) * 100)
+    return vendidos, total, porcentaje
 
 init_db()
 
@@ -355,6 +374,8 @@ def modal_pago_detalles():
         es_seleccionado = (st.session_state.get("banco_activo_id") == m_id)
 
         with cols_bancos[idx]:
+            st.markdown('<div class="bank-card-wrapper">', unsafe_allow_html=True)
+            
             # Convertir imagen a Base64 para incrustarla limpiamente
             if m_img and os.path.exists(m_img):
                 with open(m_img, "rb") as img_f:
@@ -363,7 +384,7 @@ def modal_pago_detalles():
             else:
                 img_element = '<div style="font-size:28px; margin-bottom:4px;">🏦</div>'
 
-            # Botón Streamlit invisible para capturar clic
+            # Botón Streamlit invisible para capturar clic sobre la tarjeta de banco
             if st.button(" ", key=f"btn_card_{m_id}"):
                 st.session_state["banco_activo_id"] = m_id
                 st.rerun()
@@ -378,6 +399,7 @@ def modal_pago_detalles():
                 </div>
             </div>
             """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
     # La información bancaria está OCULTA por defecto y SOLO aparece al presionar una tarjeta
     if st.session_state.get("banco_activo_id"):
@@ -464,8 +486,10 @@ with n2:
     st.markdown('<a href="#rifas-activas" style="text-decoration:none;"><button style="width:100%; padding:8px; border-radius:8px; border:1px solid #d4af37; background:transparent; color:#d4af37; font-weight:bold; cursor:pointer;">🎟️ Rifas</button></a>', unsafe_allow_html=True)
 
 with n3:
-    theme_icon = "☀️" if is_dark else "🌙"
-    st.button(theme_icon, on_click=toggle_theme, use_container_width=True)
+    theme_icon = "☀️ Modo Claro" if is_dark else "🌙 Modo Oscuro"
+    if st.button(theme_icon, key="btn_theme_toggle", use_container_width=True):
+        toggle_theme()
+        st.rerun()
 
 with n4:
     if st.button("🔍 Verificador de boletos", use_container_width=True):
@@ -534,7 +558,7 @@ with st.expander("❓ ¿CÓMO JUGAR? — 5 pasos simples para participar y ganar
 st.divider()
 
 # =========================================================
-# CATÁLOGO DE RIFAS ACTIVAS CON ANCLA HTML
+# CATÁLOGO DE RIFAS ACTIVAS CON BARRA DE PROGRESO DE 0% A 100%
 # =========================================================
 
 st.markdown('<div id="rifas-activas"></div>', unsafe_allow_html=True)
@@ -546,16 +570,32 @@ conn.close()
 
 cols_rifas = st.columns(2)
 for idx, r in enumerate(rifas):
+    r_id, r_nombre, r_categoria, r_precio, r_min, r_total, r_img, r_fecha = r
+    
+    vendidos, total, porcentaje = obtener_progreso_rifa(r_id, r_total)
+
     with cols_rifas[idx % 2]:
         with st.container(border=True):
-            if r[6] and os.path.exists(r[6]):
-                st.image(r[6], use_container_width=True)
+            if r_img and os.path.exists(r_img):
+                st.image(r_img, use_container_width=True)
             
-            st.markdown(f"### {r[1]}")
-            st.caption(f"Categoría: {r[2]} | Sorteo: {r[7]}")
-            st.markdown(f"**Precio por boleto:** <span style='color:#f5c518; font-size:18px;'>RD$ {r[3]:,.2f}</span>", unsafe_allow_html=True)
+            st.markdown(f"### {r_nombre}")
+            st.caption(f"Categoría: {r_categoria} | Sorteo: {r_fecha}")
+            st.markdown(f"**Precio por boleto:** <span style='color:#f5c518; font-size:18px;'>RD$ {r_precio:,.2f}</span>", unsafe_allow_html=True)
 
-            if st.button("🎮 JUGAR", key=f"btn_jugar_{r[0]}", use_container_width=True):
+            # Barra de Progreso de 0% a 100% (10,000 boletos)
+            st.markdown(f"""
+            <div class="progress-text">
+                <span>Progreso de venta</span>
+                <span>{porcentaje:.2f}% ({vendidos:,} / {total:,} boletos)</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.progress(porcentaje / 100.0)
+
+            st.write("") # Espaciado
+
+            # Botón JUGAR visible y totalmente funcional
+            if st.button("🎮 JUGAR", key=f"btn_jugar_{r_id}", use_container_width=True):
                 st.session_state["selected_rifa"] = r
                 st.session_state["active_dialog"] = "combos"
                 st.rerun()
