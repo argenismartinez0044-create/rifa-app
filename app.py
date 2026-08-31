@@ -73,16 +73,6 @@ st.markdown(f"""
         margin: 15px 0;
     }}
 
-    .logo-hero-animated {{
-        width: 260px;
-        max-width: 80%;
-        border-radius: 16px;
-        border: 3px solid #ffd700;
-        animation: goldGlow 2.5s infinite ease-in-out;
-        padding: 6px;
-        background-color: #000000;
-    }}
-
     .bank-card-container {{
         position: relative;
         background: linear-gradient(145deg, #1e293b, #0f172a);
@@ -109,6 +99,14 @@ st.markdown(f"""
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 11px;
+    }}
+
+    /* Estilo para los botones transparentes de bancos */
+    div[data-testid="stBaseButton-secondary"] button {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -261,12 +259,14 @@ def modal_combos():
 
                 if st.button(f"Elegir {pkg['nombre']}", key=f"btn_pkg_{idx}", use_container_width=True):
                     st.session_state["selected_boletos_qty"] = pkg["boletos"]
+                    st.session_state["banco_activo_id"] = None  # Ocultar datos de banco al abrir modal de pago
                     st.session_state["active_dialog"] = "pago"
                     st.rerun()
 
     st.divider()
     if st.button("✏️ ELEGIR CANTIDAD PERSONALIZADA", use_container_width=True):
         st.session_state["selected_boletos_qty"] = min_boletos
+        st.session_state["banco_activo_id"] = None  # Ocultar datos de banco
         st.session_state["active_dialog"] = "pago"
         st.rerun()
 
@@ -314,37 +314,50 @@ def modal_pago_detalles():
     st.divider()
 
     st.markdown("#### Selección de Método de Pago *")
-    st.caption("Toca la imagen del banco para ver las instrucciones y el número de cuenta:")
+    st.caption("Toca la imagen del banco para seleccionar y ver la información de la cuenta:")
 
     metodos = obtener_metodos_pago()
     banco_seleccionado = None
 
-    # Módulo de botones tipo teclado visual usando solo las imágenes
+    # Renderizado de botones de bancos limpios con imágenes pequeñas como único elemento clickeable
     cols = st.columns(len(metodos) if metodos else 1)
     for idx, m in enumerate(metodos):
         m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
         with cols[idx]:
-            # Resaltado visual si está seleccionado
-            es_seleccionado = (st.session_state["banco_activo_id"] == m_id)
-            borde = "#38bdf8" if es_seleccionado else "#334155"
-            bg = "#1e293b" if es_seleccionado else "transparent"
+            es_sel = (st.session_state["banco_activo_id"] == m_id)
+            borde_color = "#38bdf8" if es_sel else "rgba(255,255,255,0.15)"
+            bg_card = "rgba(56, 189, 248, 0.1)" if es_sel else "rgba(0,0,0,0.2)"
             
-            with st.container(border=True):
-                st.markdown(f"""
-                <div style="border: 2px solid {borde}; background-color: {bg}; border-radius: 10px; padding: 5px; transition: 0.3s; text-align: center;">
-                """, unsafe_allow_html=True)
-                
-                # Si existe imagen se muestra como botón, si no se usa el nombre como respaldo
-                if m_img and os.path.exists(m_img):
-                    st.image(m_img, use_container_width=True)
-                
-                if st.button("️" if m_img and os.path.exists(m_img) else f"💳 {m_nombre}", key=f"btn_banco_img_{m_id}", use_container_width=True):
-                    st.session_state["banco_activo_id"] = m_id
-                    st.rerun()
-                
-                st.markdown("</div>", unsafe_allow_html=True)
+            # HTML para mostrar imagen perfectamente escalada y centrada
+            img_html = ""
+            if m_img and os.path.exists(m_img):
+                img_html = f'<img src="data:image/png;base64,{st.image(m_img, output_format="PNG")}" style="height:45px; max-width:100%; object-fit:contain;"/>'
+            
+            # Botón Streamlit transparente envolviendo la tarjeta contenedora
+            if st.button(f"{m_nombre}", key=f"btn_banco_img_{m_id}", use_container_width=True):
+                st.session_state["banco_activo_id"] = m_id
+                st.rerun()
 
-    # Detalle del banco activo (Permanece oculto hasta hacer clic en una imagen)
+            st.markdown(f"""
+            <div style="
+                margin-top: -42px;
+                pointer-events: none;
+                border: 2px solid {borde_color};
+                background-color: {bg_card};
+                border-radius: 10px;
+                padding: 10px;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 75px;
+            ">
+                <span style="font-size:14px; font-weight:bold; color:#FFFFFF;">💳 {m_nombre}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # La información bancaria está OCULTA por defecto y SOLO se muestra cuando hay un banco activo seleccionado
     if st.session_state["banco_activo_id"]:
         banco_sel = next((m for m in metodos if m[0] == st.session_state["banco_activo_id"]), None)
         if banco_sel:
