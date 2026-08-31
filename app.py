@@ -22,7 +22,7 @@ def toggle_theme():
 
 is_dark = st.session_state["theme_mode"] == "dark"
 
-# Paleta de colores
+# Paleta de colores y fondo dinámico
 bg_style = """
     background-color: #0b0f17;
     background-image: 
@@ -314,25 +314,37 @@ def modal_pago_detalles():
     st.divider()
 
     st.markdown("#### Selección de Método de Pago *")
-    st.caption("Toca el logo del banco para ver las instrucciones y número de cuenta:")
+    st.caption("Toca la imagen del banco para ver las instrucciones y el número de cuenta:")
 
     metodos = obtener_metodos_pago()
     banco_seleccionado = None
 
+    # Módulo de botones tipo teclado visual usando solo las imágenes
     cols = st.columns(len(metodos) if metodos else 1)
     for idx, m in enumerate(metodos):
         m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
         with cols[idx]:
+            # Resaltado visual si está seleccionado
+            es_seleccionado = (st.session_state["banco_activo_id"] == m_id)
+            borde = "#38bdf8" if es_seleccionado else "#334155"
+            bg = "#1e293b" if es_seleccionado else "transparent"
+            
             with st.container(border=True):
-                if m_img and os.path.exists(m_img):
-                    st.image(m_img, width=100)
-                else:
-                    st.markdown(f"### {m_nombre}")
+                st.markdown(f"""
+                <div style="border: 2px solid {borde}; background-color: {bg}; border-radius: 10px; padding: 5px; transition: 0.3s; text-align: center;">
+                """, unsafe_allow_html=True)
                 
-                if st.button(f"Pagar con {m_nombre}", key=f"btn_banco_img_{m_id}", use_container_width=True):
+                # Si existe imagen se muestra como botón, si no se usa el nombre como respaldo
+                if m_img and os.path.exists(m_img):
+                    st.image(m_img, use_container_width=True)
+                
+                if st.button("️" if m_img and os.path.exists(m_img) else f"💳 {m_nombre}", key=f"btn_banco_img_{m_id}", use_container_width=True):
                     st.session_state["banco_activo_id"] = m_id
                     st.rerun()
+                
+                st.markdown("</div>", unsafe_allow_html=True)
 
+    # Detalle del banco activo (Permanece oculto hasta hacer clic en una imagen)
     if st.session_state["banco_activo_id"]:
         banco_sel = next((m for m in metodos if m[0] == st.session_state["banco_activo_id"]), None)
         if banco_sel:
@@ -420,9 +432,9 @@ with n2:
     st.markdown('<a href="#rifas-activas" style="text-decoration:none;"><button style="width:100%; padding:8px; border-radius:8px; border:1px solid #d4af37; background:transparent; color:#d4af37; font-weight:bold; cursor:pointer;">🎟️ Rifas</button></a>', unsafe_allow_html=True)
 
 with n3:
-    # Botón de Cambio de Tema
-    btn_label = "☀️ Modo Claro" if is_dark else "🌙 Modo Oscuro"
-    st.button(btn_label, on_click=toggle_theme, use_container_width=True)
+    # Botón Modo Claro/Oscuro mostrando SOLO EL LOGO/ICONO (🌙/☀️)
+    theme_icon = "☀️" if is_dark else "🌙"
+    st.button(theme_icon, on_click=toggle_theme, use_container_width=True)
 
 with n4:
     if st.button("🔍 Verificador de boletos", use_container_width=True):
@@ -460,7 +472,7 @@ if st.session_state.get("verificar_open", False):
 st.divider()
 
 # =========================================================
-# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO EN TAMAÑO PERFECTO)
+# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO CENTRADO)
 # =========================================================
 
 st.markdown('<div class="logo-hero-container">', unsafe_allow_html=True)
@@ -484,7 +496,7 @@ with st.expander("❓ ¿CÓMO JUGAR? — 5 pasos simples para participar y ganar
     1. **Elige tu Rifa:** Selecciona el premio que deseas ganar en el catálogo.
     2. **Haz clic en JUGAR:** Abre el panel de selección de paquetes.
     3. **Selecciona tu Paquete:** Elige la cantidad de números deseada.
-    4. **Envía tu Comprobante:** Realiza tu transferencia a Banreservas o Banco Popular y sube la foto.
+    4. **Envía tu Comprobante:** Realiza tu transferencia bancaria y sube la foto.
     5. **Asignación Aleatoria:** Al validar tu pago, se te asignan tus números al azar (revisión en un máximo de 24 horas).
     """)
 
