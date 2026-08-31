@@ -12,39 +12,57 @@ st.set_page_config(
 )
 
 # =========================================================
-# ESTILOS CSS PERSONALIZADOS (MODO OSCURO + GLOW DEL LOGO)
+# ESTILOS CSS PERSONALIZADOS Y ANIMACIÓN DEL LOGO
 # =========================================================
 st.markdown("""
 <style>
-    /* Efecto de resplandor parpadeante dorado/plateado para el logo */
-    @keyframes goldGlow {
-        0% { box-shadow: 0 0 15px rgba(245, 197, 24, 0.4), 0 0 30px rgba(212, 175, 55, 0.2); }
-        50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 50px rgba(192, 192, 192, 0.6); }
-        100% { box-shadow: 0 0 15px rgba(245, 197, 24, 0.4), 0 0 30px rgba(212, 175, 55, 0.2); }
+    /* Fondo principal estilizado */
+    .stApp {
+        background: linear-gradient(135deg, #0f141d 0%, #1a2232 50%, #111723 100%);
+        color: #FFFFFF;
     }
     
-    .logo-hero-container {
+    /* Animación de luz dorada/plateada recorriendo el logo */
+    @keyframes goldSilverGlow {
+        0% {
+            box-shadow: 0 0 15px #ffd700, 0 0 30px #c0c0c0, inset 0 0 10px #ffd700;
+            border-color: #ffd700;
+        }
+        50% {
+            box-shadow: 0 0 35px #ffffff, 0 0 60px #e6c619, inset 0 0 20px #ffffff;
+            border-color: #ffffff;
+        }
+        100% {
+            box-shadow: 0 0 15px #ffd700, 0 0 30px #c0c0c0, inset 0 0 10px #ffd700;
+            border-color: #ffd700;
+        }
+    }
+
+    .logo-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-bottom: 20px;
+        margin: 20px 0;
     }
-    
-    .logo-hero-img {
-        max-width: 280px;
-        border-radius: 18px;
-        animation: goldGlow 3s infinite alternate;
-        border: 2px solid rgba(245, 197, 24, 0.6);
+
+    .logo-animated {
+        width: 320px;
+        max-width: 90%;
+        border-radius: 20px;
+        border: 3px solid #ffd700;
+        animation: goldSilverGlow 2.5s infinite ease-in-out;
+        padding: 5px;
+        background-color: #000000;
     }
-    
-    /* Tarjetas de Combos arregladas */
-    .combo-card {
-        border: 1px solid #2a2e3d;
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        background-color: #121620;
-        margin-bottom: 12px;
+
+    /* Estilos para los combos sin errores HTML */
+    .badge-pop {
+        background: linear-gradient(90deg, #f5c518, #ff8c00);
+        color: #000;
+        font-weight: bold;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -148,7 +166,7 @@ def normalizar_telefono(telefono):
 init_db()
 
 # =========================================================
-# GESTIÓN DE MODALES SECUENCIALES (SIN NIDIFICACIÓN)
+# ESTADOS Y MODALES SEPARADOS (EVITA ANIDAMIENTO)
 # =========================================================
 
 if "active_dialog" not in st.session_state:
@@ -166,15 +184,15 @@ def modal_combos():
 
     rifa_id, nombre, categoria, precio, min_boletos, total_boletos, imagen, fecha = rifa_datos
 
-    st.markdown("<h4 style='text-align: center;'>Selecciona un paquete o elige cantidad personalizada</h4>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray;'>A mayor cantidad, más oportunidades de ganar</p>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #FFFFFF;'>Selecciona un paquete o elige cantidad personalizada</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #f5c518;'>A mayor cantidad, más oportunidades de ganar</p>", unsafe_allow_html=True)
 
     paquetes = [
-        {"nombre": "ROOKIE", "boletos": 2, "icon": "🪖", "badge": None},
-        {"nombre": "AMATEUR", "boletos": 5, "icon": "🏁", "badge": None},
+        {"nombre": "ROOKIE", "boletos": 2, "icon": "🪖", "badge": ""},
+        {"nombre": "AMATEUR", "boletos": 5, "icon": "🏁", "badge": ""},
         {"nombre": "PRO", "boletos": 10, "icon": "🚀", "badge": "⭐ POPULAR"},
-        {"nombre": "ELITE", "boletos": 15, "icon": "🏆", "badge": None},
-        {"nombre": "CAMPEÓN", "boletos": 25, "icon": "👑", "badge": None},
+        {"nombre": "ELITE", "boletos": 15, "icon": "🏆", "badge": ""},
+        {"nombre": "CAMPEÓN", "boletos": 25, "icon": "👑", "badge": ""},
         {"nombre": "LEYENDA", "boletos": 50, "icon": "⚡", "badge": "⭐ VIP"},
         {"nombre": "MÍTICO", "boletos": 100, "icon": "🔥", "badge": "🔥 MÁXIMO"},
     ]
@@ -184,25 +202,19 @@ def modal_combos():
     for idx, pkg in enumerate(paquetes):
         col_dest = col1 if idx % 2 == 0 else col2
         with col_dest:
-            costo = pkg["boletos"] * precio
-            badge_html = f"<span style='background-color:#E5A93C; color:black; padding:2px 6px; border-radius:4px; font-size:11px;'>{pkg['badge']}</span><br>" if pkg['badge'] else ""
-            
-            st.markdown(f"""
-            <div class="combo-card">
-                {badge_html}
-                <span style="font-size: 26px;">{pkg['icon']}</span>
-                <h4 style="margin:4px 0;">{pkg['nombre']}</h4>
-                <h2 style="margin:2px 0; color: #F5C518;">{pkg['boletos']}</h2>
-                <p style="margin:0; font-size: 12px; color: #aaa;">NÚMEROS</p>
-                <hr style="border-color:#333; margin:8px 0;">
-                <strong>RD$ {costo:,.2f}</strong>
-            </div>
-            """, unsafe_allow_html=True)
+            with st.container(border=True):
+                if pkg["badge"]:
+                    st.markdown(f'<span class="badge-pop">{pkg["badge"]}</span>', unsafe_allow_html=True)
+                
+                st.markdown(f"### {pkg['icon']} {pkg['nombre']}")
+                st.markdown(f"## {pkg['boletos']} <small style='font-size:14px;'>NÚMEROS</small>", unsafe_allow_html=True)
+                costo = pkg["boletos"] * precio
+                st.markdown(f"**RD$ {costo:,.2f}**")
 
-            if st.button(f"Elegir {pkg['nombre']}", key=f"btn_pkg_{idx}", use_container_width=True):
-                st.session_state["selected_boletos_qty"] = pkg["boletos"]
-                st.session_state["active_dialog"] = "pago"
-                st.rerun()
+                if st.button(f"Elegir {pkg['nombre']}", key=f"btn_pkg_{idx}", use_container_width=True):
+                    st.session_state["selected_boletos_qty"] = pkg["boletos"]
+                    st.session_state["active_dialog"] = "pago"
+                    st.rerun()
 
     st.divider()
     if st.button("✏️ ELEGIR CANTIDAD PERSONALIZADA", use_container_width=True):
@@ -232,7 +244,7 @@ def modal_pago_detalles():
                     st.session_state["selected_boletos_qty"] -= 1
                     st.rerun()
         with c2:
-            st.markdown(f"<h2 style='text-align: center;'>{st.session_state['selected_boletos_qty']}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h2 style='text-align: center; color: #f5c518;'>{st.session_state['selected_boletos_qty']}</h2>", unsafe_allow_html=True)
         with c3:
             if st.button("➕", use_container_width=True):
                 st.session_state["selected_boletos_qty"] += 1
@@ -282,7 +294,7 @@ def modal_pago_detalles():
     st.divider()
 
     comprobante_file = st.file_uploader("Haz clic para subir tu comprobante (JPG, PNG o PDF)", type=["png", "jpg", "jpeg", "pdf"])
-    acepta = st.toggle("Confirmo que mis datos son correctos. Se enviarán correos de confirmación y seguimiento.")
+    acepta = st.toggle("Confirmo que mis datos son correctos.")
 
     listo = bool(nombre_c and telefono_c and banco_seleccionado and comprobante_file and acepta)
 
@@ -318,92 +330,97 @@ def modal_pago_detalles():
 
             st.session_state["active_dialog"] = None
             st.success("🎉 ¡Solicitud recibida correctamente!")
-            st.warning("⏳ Tus boletos están en proceso de revisión. La validación toma entre 24 horas para ser aprobados. ¡Mucho éxito!")
+            st.warning("⏳ Tus boletos están en revisión (lapso aproximado de 24 horas). Al aprobarse, se asignan tus números al azar.")
 
-# Control de renderizado de modales
+# Apertura controlada
 if st.session_state["active_dialog"] == "combos":
     modal_combos()
 elif st.session_state["active_dialog"] == "pago":
     modal_pago_detalles()
 
 # =========================================================
-# VISTA PRINCIPAL CON HERO SECTION Y LOGO SIRIO RD
+# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO Y BRILLO)
 # =========================================================
 
-# Barra Superior / Navegación
-top_c1, top_c2, top_c3, top_c4 = st.columns([3, 1, 1, 2])
-with top_c1:
-    st.markdown("### 🎲 **RIFAS SIRIO RD**")
-with top_c2:
-    if st.button("📋 Rifas", use_container_width=True):
-        pass
-with top_c3:
-    if st.button("🏆 Ganadores", use_container_width=True):
-        st.info("Próximamente sección de ganadores.")
-with top_c4:
+# Navbar
+n1, n2, n3, n4 = st.columns([3, 1, 1, 2])
+with n1:
+    st.markdown("## 🎲 **RIFAS SIRIO RD**")
+with n2:
+    st.button("Rifas", use_container_width=True)
+with n3:
+    st.button("Ganadores", use_container_width=True)
+with n4:
     if st.button("🔍 Verificar boleto", use_container_width=True):
         st.session_state["verificar_open"] = not st.session_state.get("verificar_open", False)
 
 if st.session_state.get("verificar_open", False):
     with st.expander("🔎 Verificador de Boletos", expanded=True):
-        tel_ver = st.text_input("Ingresa tu teléfono para buscar tus boletos:")
-        if st.button("Consultar"):
+        tel_ver = st.text_input("Ingresa tu número de WhatsApp:")
+        if st.button("Consultar Boletos"):
             conn = conectar()
-            res = conn.execute("SELECT numero, estado, rifa_id FROM boletos WHERE usuario_telefono=?", (normalizar_telefono(tel_ver),)).fetchall()
+            res = conn.execute("SELECT numero, estado FROM boletos WHERE usuario_telefono=?", (normalizar_telefono(tel_ver),)).fetchall()
             conn.close()
             if res:
-                st.write(f"Boletos encontrados: {len(res)}")
                 for b in res:
-                    st.write(f"• Número: **{b[0]}** | Estado: `{b[1]}`")
+                    st.write(f"• Boleto: **{b[0]}** | Estado: `{b[1]}`")
             else:
-                st.warning("No se encontraron boletos asociados a ese número.")
+                st.warning("No hay boletos registrados con este número.")
 
 st.divider()
 
-# Hero Section Centrada con el Logo Sirio RD y Glow
+# Presentación Centralizada con Logo e Iluminación
 st.markdown("""
-<div class="logo-hero-container">
-    <div style="text-align: center;">
-        <h1 style="color: #F5C518; font-size: 42px; font-weight: 800; margin-bottom: 5px;">RIFAS SIRIO RD</h1>
-        <p style="color: #E0E0E0; font-size: 18px; margin-bottom: 15px;">Experiencia exclusiva · La plataforma más lujosa para participar y ganar.</p>
-        <h2 style="color: #FFFFFF; font-size: 32px; font-weight: 700; margin-bottom: 25px;">Premios extraordinarios garantizados</h2>
+<div class="logo-container">
+    <div style="text-align:center;">
+        <img src="https://i.ibb.co/6y4G1m0/rifas-sirio-logo.png" class="logo-animated" alt="Rifas Sirio RD" onerror="this.src='https://via.placeholder.com/300x120?text=RIFAS+SIRIO+RD';">
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Sección de "¿Cómo Jugar?" (Desplegable o información)
+st.markdown("""
+<div style="text-align: center; margin-bottom: 25px;">
+    <p style="color: #F5C518; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;">EXPERIENCIA EXCLUSIVA</p>
+    <h1 style="color: #FFFFFF; font-size: 36px; font-weight: 800; margin-top: 0;">Premios extraordinarios garantizados</h1>
+    <p style="color: #CCCCCC; font-size: 16px;">La plataforma más lujosa para participar y ganar de República Dominicana.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Sección informativa ¿Cómo Jugar?
 with st.expander("❓ ¿CÓMO JUGAR? — 5 pasos simples para participar y ganar", expanded=False):
     st.markdown("""
-    1. **Selecciona tu Rifa:** Elige la rifa activa de tu preferencia.
-    2. **Elige tu Paquete:** Selecciona un combo de boletos o ingresa una cantidad libre.
-    3. **Ingresa tus Datos:** Completa tu nombre y WhatsApp de contacto.
-    4. **Realiza la Transferencia:** Transfiere al banco seleccionado y adjunta el comprobante.
-    5. **¡Listo!:** Tus boletos serán asignados al azar y puestos en revisión (máx. 24 horas).
+    1. **Elige tu Rifa:** Selecciona el premio que deseas ganar en el catálogo.
+    2. **Haz clic en JUGAR:** Abre el panel de selección de combos.
+    3. **Selecciona tu Paquete:** Elige la cantidad de números deseada.
+    4. **Envía tu Comprobante:** Realiza tu transferencia a Banreservas o Banco Popular y sube la foto.
+    5. **Asignación Aleatoria:** Al validar tu pago, se te asignan tus números al azar (revisión en un máximo de 24 horas).
     """)
 
 st.divider()
 
-# Catálogo de Rifas (Ubicado más abajo)
-st.subheader("🔥 Rifas Activas")
+# =========================================================
+# CATÁLOGO DE RIFAS ACTIVAS CON BOTÓN 'JUGAR'
+# =========================================================
+
+st.markdown("<h2 style='color: #FFFFFF;'>🔥 Rifas Activas</h2>", unsafe_allow_html=True)
 
 conn = conectar()
 rifas = conn.execute("SELECT id, nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha FROM rifas WHERE COALESCE(activa,1)=1").fetchall()
 conn.close()
 
-col_rifas = st.columns(2)
+cols_rifas = st.columns(2)
 for idx, r in enumerate(rifas):
-    with col_rifas[idx % 2]:
+    with cols_rifas[idx % 2]:
         with st.container(border=True):
             if r[6] and os.path.exists(r[6]):
                 st.image(r[6], use_container_width=True)
-            else:
-                st.markdown("### 🎲 Rifa Exclusiva")
             
             st.markdown(f"### {r[1]}")
             st.caption(f"Categoría: {r[2]} | Sorteo: {r[7]}")
-            st.markdown(f"**Precio por boleto:** RD$ {r[3]:,.2f}")
+            st.markdown(f"**Precio por boleto:** <span style='color:#f5c518; font-size:18px;'>RD$ {r[3]:,.2f}</span>", unsafe_allow_html=True)
 
-            if st.button("🎟️ QUIERO PARTICIPAR", key=f"part_hero_{r[0]}", use_container_width=True):
+            # Botón actualizado a 'JUGAR'
+            if st.button("🎮 JUGAR", key=f"btn_jugar_{r[0]}", use_container_width=True):
                 st.session_state["selected_rifa"] = r
                 st.session_state["active_dialog"] = "combos"
                 st.rerun()
