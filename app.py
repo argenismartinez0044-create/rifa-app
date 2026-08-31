@@ -1,6 +1,7 @@
 import datetime
 import os
 import sqlite3
+import base64
 import streamlit as st
 
 DB_FILE = "rifas_v4.db"
@@ -42,7 +43,7 @@ bg_style = """
 text_color = "#FFFFFF" if is_dark else "#0f172a"
 
 # =========================================================
-# ESTILOS CSS PERSONALIZADOS
+# ESTILOS CSS PERSONALIZADOS Y TARJETAS DE BANCOS COMPACTAS
 # =========================================================
 st.markdown(f"""
 <style>
@@ -50,22 +51,6 @@ st.markdown(f"""
         {bg_style}
     }}
     
-    /* Animación de luz dorada alrededor del logo central */
-    @keyframes goldGlow {{
-        0% {{
-            box-shadow: 0 0 12px #ffd700, 0 0 25px rgba(255, 215, 0, 0.4);
-            border-color: #ffd700;
-        }}
-        50% {{
-            box-shadow: 0 0 28px #ffffff, 0 0 45px rgba(255, 215, 0, 0.8);
-            border-color: #ffffff;
-        }}
-        100% {{
-            box-shadow: 0 0 12px #ffd700, 0 0 25px rgba(255, 215, 0, 0.4);
-            border-color: #ffd700;
-        }}
-    }}
-
     .logo-hero-container {{
         display: flex;
         justify-content: center;
@@ -101,12 +86,54 @@ st.markdown(f"""
         font-size: 11px;
     }}
 
-    /* Estilo para los botones transparentes de bancos */
-    div[data-testid="stBaseButton-secondary"] button {{
+    /* Estilos para ocultar el botón transparente de Streamlit */
+    div[data-testid="stButton"] button {{
         background: transparent !important;
         border: none !important;
+        color: transparent !important;
         box-shadow: none !important;
+        height: 110px !important;
+        width: 135px !important;
         padding: 0 !important;
+    }}
+
+    /* Estilos visuales exactos a la Imagen 2 para las tarjetas de banco */
+    .bank-card-btn {{
+        background-color: #131927;
+        border: 1.5px solid #2a364f;
+        border-radius: 12px;
+        padding: 12px 8px;
+        width: 135px;
+        height: 110px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease-in-out;
+    }}
+    .bank-card-btn:hover {{
+        border-color: #38bdf8;
+        background-color: #1e293b;
+    }}
+    .bank-card-selected {{
+        border: 2px solid #38bdf8 !important;
+        background-color: #172554 !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }}
+    .bank-icon-img {{
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }}
+    .bank-title-text {{
+        color: #e2e8f0;
+        font-size: 11px;
+        font-weight: 700;
+        text-align: center;
+        line-height: 1.2;
+        text-transform: uppercase;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -259,14 +286,14 @@ def modal_combos():
 
                 if st.button(f"Elegir {pkg['nombre']}", key=f"btn_pkg_{idx}", use_container_width=True):
                     st.session_state["selected_boletos_qty"] = pkg["boletos"]
-                    st.session_state["banco_activo_id"] = None  # Ocultar datos de banco al abrir modal de pago
+                    st.session_state["banco_activo_id"] = None  # Banco oculto al inicio
                     st.session_state["active_dialog"] = "pago"
                     st.rerun()
 
     st.divider()
     if st.button("✏️ ELEGIR CANTIDAD PERSONALIZADA", use_container_width=True):
         st.session_state["selected_boletos_qty"] = min_boletos
-        st.session_state["banco_activo_id"] = None  # Ocultar datos de banco
+        st.session_state["banco_activo_id"] = None  # Banco oculto al inicio
         st.session_state["active_dialog"] = "pago"
         st.rerun()
 
@@ -287,14 +314,14 @@ def modal_pago_detalles():
         st.caption(f"Selección aleatoria del sistema. (Mínimo: {min_boletos})")
         c1, c2, c3 = st.columns([1, 2, 1])
         with c1:
-            if st.button("➖", use_container_width=True):
+            if st.button("➖", key="btn_minus_qty", use_container_width=True):
                 if st.session_state["selected_boletos_qty"] > min_boletos:
                     st.session_state["selected_boletos_qty"] -= 1
                     st.rerun()
         with c2:
             st.markdown(f"<h2 style='text-align: center; color: #f5c518;'>{st.session_state['selected_boletos_qty']}</h2>", unsafe_allow_html=True)
         with c3:
-            if st.button("➕", use_container_width=True):
+            if st.button("➕", key="btn_plus_qty", use_container_width=True):
                 st.session_state["selected_boletos_qty"] += 1
                 st.rerun()
 
@@ -313,63 +340,56 @@ def modal_pago_detalles():
 
     st.divider()
 
-    st.markdown("#### Selección de Método de Pago *")
-    st.caption("Toca la imagen del banco para seleccionar y ver la información de la cuenta:")
+    # =========================================================
+    # SELECCIÓN DE BANCOS CON EL DISEÑO EXACTO A LA IMAGEN 2
+    # =========================================================
+    st.markdown("#### Método de Pago *")
 
     metodos = obtener_metodos_pago()
     banco_seleccionado = None
 
-    # Renderizado de botones de bancos limpios con imágenes pequeñas como único elemento clickeable
-    cols = st.columns(len(metodos) if metodos else 1)
+    cols_bancos = st.columns(len(metodos) if metodos else 1)
+
     for idx, m in enumerate(metodos):
         m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
-        with cols[idx]:
-            es_sel = (st.session_state["banco_activo_id"] == m_id)
-            borde_color = "#38bdf8" if es_sel else "rgba(255,255,255,0.15)"
-            bg_card = "rgba(56, 189, 248, 0.1)" if es_sel else "rgba(0,0,0,0.2)"
-            
-            # HTML para mostrar imagen perfectamente escalada y centrada
-            img_html = ""
+        es_seleccionado = (st.session_state.get("banco_activo_id") == m_id)
+
+        with cols_bancos[idx]:
+            # Convertir imagen a Base64 para incrustarla limpiamente
             if m_img and os.path.exists(m_img):
-                img_html = f'<img src="data:image/png;base64,{st.image(m_img, output_format="PNG")}" style="height:45px; max-width:100%; object-fit:contain;"/>'
-            
-            # Botón Streamlit transparente envolviendo la tarjeta contenedora
-            if st.button(f"{m_nombre}", key=f"btn_banco_img_{m_id}", use_container_width=True):
+                with open(m_img, "rb") as img_f:
+                    encoded = base64.b64encode(img_f.read()).decode()
+                img_element = f'<img src="data:image/png;base64,{encoded}" class="bank-icon-img"/>'
+            else:
+                img_element = '<div style="font-size:28px; margin-bottom:4px;">🏦</div>'
+
+            # Botón Streamlit invisible para capturar clic
+            if st.button(" ", key=f"btn_card_{m_id}"):
                 st.session_state["banco_activo_id"] = m_id
                 st.rerun()
 
+            # Renderizado visual compacto (Estilo tarjeta idéntico a la imagen 2)
+            selected_class = "bank-card-selected" if es_seleccionado else ""
             st.markdown(f"""
-            <div style="
-                margin-top: -42px;
-                pointer-events: none;
-                border: 2px solid {borde_color};
-                background-color: {bg_card};
-                border-radius: 10px;
-                padding: 10px;
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 75px;
-            ">
-                <span style="font-size:14px; font-weight:bold; color:#FFFFFF;">💳 {m_nombre}</span>
+            <div style="margin-top: -110px; pointer-events: none;">
+                <div class="bank-card-btn {selected_class}">
+                    {img_element}
+                    <span class="bank-title-text">{m_nombre}<br><small style="font-size:9px; color:#94a3b8;">({m_tipo.upper()})</small></span>
+                </div>
             </div>
             """, unsafe_allow_html=True)
 
-    # La información bancaria está OCULTA por defecto y SOLO se muestra cuando hay un banco activo seleccionado
-    if st.session_state["banco_activo_id"]:
+    # La información bancaria está OCULTA por defecto y SOLO aparece al presionar una tarjeta
+    if st.session_state.get("banco_activo_id"):
         banco_sel = next((m for m in metodos if m[0] == st.session_state["banco_activo_id"]), None)
         if banco_sel:
             banco_seleccionado = banco_sel[1]
-            
             st.markdown(f"""
             <div class="bank-card-container">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Logo_del_Banco_Central_de_la_Rep%C3%BAblica_Dominicana.png" class="bcrd-seal" alt="BCRD">
                 <h4 style="color: #38bdf8; margin-top:0;">🏦 {banco_sel[1]}</h4>
                 <p style="margin: 4px 0;"><strong>Titular:</strong> {banco_sel[2]}</p>
                 <p style="margin: 4px 0;"><strong>Tipo de cuenta:</strong> {banco_sel[3]}</p>
-                <p style="margin: 4px 0; font-size: 16px;"><strong>Número de cuenta:</strong></p>
+                <p style="margin: 4px 0; font-size: 15px;"><strong>Número de cuenta:</strong></p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -441,11 +461,9 @@ with n1:
         st.markdown("## 🎲 **RIFAS SIRIO RD**")
 
 with n2:
-    # Botón Rifas con desplazamiento directo
     st.markdown('<a href="#rifas-activas" style="text-decoration:none;"><button style="width:100%; padding:8px; border-radius:8px; border:1px solid #d4af37; background:transparent; color:#d4af37; font-weight:bold; cursor:pointer;">🎟️ Rifas</button></a>', unsafe_allow_html=True)
 
 with n3:
-    # Botón Modo Claro/Oscuro mostrando SOLO EL LOGO/ICONO (🌙/☀️)
     theme_icon = "☀️" if is_dark else "🌙"
     st.button(theme_icon, on_click=toggle_theme, use_container_width=True)
 
@@ -485,7 +503,7 @@ if st.session_state.get("verificar_open", False):
 st.divider()
 
 # =========================================================
-# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO CENTRADO)
+# PRESENTACIÓN PRINCIPAL (HERO SECTION)
 # =========================================================
 
 st.markdown('<div class="logo-hero-container">', unsafe_allow_html=True)
