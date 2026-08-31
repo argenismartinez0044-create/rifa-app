@@ -16,13 +16,12 @@ st.set_page_config(
 # =========================================================
 st.markdown("""
 <style>
-    /* Fondo principal estilizado */
     .stApp {
         background: linear-gradient(135deg, #0f141d 0%, #1a2232 50%, #111723 100%);
         color: #FFFFFF;
     }
     
-    /* Animación de luz dorada/plateada recorriendo el logo */
+    /* Animación de luz dorada/plateada en el logo */
     @keyframes goldSilverGlow {
         0% {
             box-shadow: 0 0 15px #ffd700, 0 0 30px #c0c0c0, inset 0 0 10px #ffd700;
@@ -46,16 +45,35 @@ st.markdown("""
     }
 
     .logo-animated {
-        width: 320px;
+        width: 420px;
         max-width: 90%;
-        border-radius: 20px;
+        border-radius: 18px;
         border: 3px solid #ffd700;
         animation: goldSilverGlow 2.5s infinite ease-in-out;
-        padding: 5px;
+        padding: 4px;
         background-color: #000000;
     }
 
-    /* Estilos para los combos sin errores HTML */
+    /* Tarjeta de detalles bancarios con sello oficial */
+    .bank-card-container {
+        position: relative;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 2px solid #38bdf8;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .bcrd-seal {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 55px;
+        opacity: 0.9;
+        filter: drop-shadow(0 0 4px rgba(255,255,255,0.3));
+    }
+
     .badge-pop {
         background: linear-gradient(90deg, #f5c518, #ff8c00);
         color: #000;
@@ -166,7 +184,7 @@ def normalizar_telefono(telefono):
 init_db()
 
 # =========================================================
-# ESTADOS Y MODALES SEPARADOS (EVITA ANIDAMIENTO)
+# ESTADOS Y MODALES
 # =========================================================
 
 if "active_dialog" not in st.session_state:
@@ -175,6 +193,8 @@ if "selected_rifa" not in st.session_state:
     st.session_state["selected_rifa"] = None
 if "selected_boletos_qty" not in st.session_state:
     st.session_state["selected_boletos_qty"] = 10
+if "banco_activo_id" not in st.session_state:
+    st.session_state["banco_activo_id"] = None
 
 @st.dialog("Elige tu paquete de números", width="large")
 def modal_combos():
@@ -256,44 +276,65 @@ def modal_pago_detalles():
     st.markdown(f"### TOTAL A PAGAR: **RD$ {total_pagar:,.2f}**")
     st.caption(f"Compra mínima: {min_boletos} boletos · Máximo: 10,000 por usuario")
 
-    st.info("ℹ️ Los números de boletos se **asignarán automáticamente al azar** tras validar tu pago. ¡Mayor cantidad = más oportunidades de ganar!")
+    st.info("ℹ️ Los números de boletos se **asignarán automáticamente al azar** tras validar tu pago.")
 
     st.divider()
 
-    nombre_c = st.text_input("Nombre *", placeholder="Ej: Juan Pérez")
+    # FORMULARIO: Se eliminó el campo de correo electrónico
+    nombre_c = st.text_input("Nombre completo *", placeholder="Ej: Juan Pérez")
     telefono_c = st.text_input("Teléfono (WhatsApp) *", placeholder="+1 (829) 000-0000")
-    correo_c = st.text_input("Correo electrónico (opcional)", placeholder="correo@ejemplo.com")
 
     st.divider()
 
-    st.markdown("#### Banco a transferir *")
-    st.caption("Selecciona el banco al que transferirás para ver el número de cuenta y titular.")
+    st.markdown("#### Selección de Método de Pago *")
+    st.caption("Toca el logo del banco para ver las instrucciones y número de cuenta:")
 
     metodos = obtener_metodos_pago()
     banco_seleccionado = None
 
-    if "banco_activo_id" not in st.session_state:
-        st.session_state["banco_activo_id"] = None
-
+    # Botones con imágenes pequeñas de Banreservas.png y Popular.png
     cols = st.columns(len(metodos) if metodos else 1)
     for idx, m in enumerate(metodos):
         m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
         with cols[idx]:
-            if st.button(f"🏦 {m_nombre}", key=f"btn_banco_{m_id}", use_container_width=True):
-                st.session_state["banco_activo_id"] = m_id
+            with st.container(border=True):
+                if m_img and os.path.exists(m_img):
+                    st.image(m_img, width=110)
+                else:
+                    st.markdown(f"### {m_nombre}")
+                
+                if st.button(f"Pagar con {m_nombre}", key=f"btn_banco_img_{m_id}", use_container_width=True):
+                    st.session_state["banco_activo_id"] = m_id
+                    st.rerun()
 
+    # Cuadro de detalles (Solo visible al tocar una imagen/botón)
     if st.session_state["banco_activo_id"]:
         banco_sel = next((m for m in metodos if m[0] == st.session_state["banco_activo_id"]), None)
         if banco_sel:
-            st.success(f"**Cuenta {banco_sel[1]}**")
-            st.write(f"📌 **Titular:** {banco_sel[2]}")
-            st.write(f"📌 **Tipo:** {banco_sel[3]}")
-            st.code(banco_sel[4], language=None)
             banco_seleccionado = banco_sel[1]
+            
+            # Render del cuadro con sello del Banco Central de la RD
+            st.markdown(f"""
+            <div class="bank-card-container">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Logo_del_Banco_Central_de_la_Rep%C3%BAblica_Dominicana.png" class="bcrd-seal" alt="BCRD">
+                <h4 style="color: #38bdf8; margin-top:0;">🏦 {banco_sel[1]}</h4>
+                <p style="margin: 4px 0;"><strong>Titular:</strong> {banco_sel[2]}</p>
+                <p style="margin: 4px 0;"><strong>Tipo de cuenta:</strong> {banco_sel[3]}</p>
+                <p style="margin: 4px 0; font-size: 18px;"><strong>Número de cuenta:</strong></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Campo numérico y botón para copiar
+            c_acc, c_btn = st.columns([3, 1])
+            with c_acc:
+                st.code(banco_sel[4], language=None)
+            with c_btn:
+                if st.button("📋 Copiar", key="btn_copy_acc", use_container_width=True):
+                    st.toast(f"¡Número de cuenta {banco_sel[4]} copiado!", icon="📋")
 
     st.divider()
 
-    comprobante_file = st.file_uploader("Haz clic para subir tu comprobante (JPG, PNG o PDF)", type=["png", "jpg", "jpeg", "pdf"])
+    comprobante_file = st.file_uploader("Subir foto o PDF del comprobante", type=["png", "jpg", "jpeg", "pdf"])
     acepta = st.toggle("Confirmo que mis datos son correctos.")
 
     listo = bool(nombre_c and telefono_c and banco_seleccionado and comprobante_file and acepta)
@@ -306,7 +347,7 @@ def modal_pago_detalles():
         disponibles = c.fetchall()
 
         if len(disponibles) < cant_final:
-            st.error("No hay suficientes boletos disponibles en este momento.")
+            st.error("No hay suficientes boletos disponibles.")
             conn.close()
         else:
             ruta_comp = guardar_imagen(comprobante_file, "comprobantes", telefono_c)
@@ -329,17 +370,18 @@ def modal_pago_detalles():
             conn.close()
 
             st.session_state["active_dialog"] = None
-            st.success("🎉 ¡Solicitud recibida correctamente!")
-            st.warning("⏳ Tus boletos están en revisión (lapso aproximado de 24 horas). Al aprobarse, se asignan tus números al azar.")
+            st.session_state["banco_activo_id"] = None
+            st.success("🎉 ¡Solicitud recibida!")
+            st.warning("⏳ Boletos en revisión (máximo 24 hrs). Al aprobarse, se asignan tus números al azar.")
 
-# Apertura controlada
+# Apertura de modales
 if st.session_state["active_dialog"] == "combos":
     modal_combos()
 elif st.session_state["active_dialog"] == "pago":
     modal_pago_detalles()
 
 # =========================================================
-# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO Y BRILLO)
+# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO OFICIAL)
 # =========================================================
 
 # Navbar
@@ -369,11 +411,11 @@ if st.session_state.get("verificar_open", False):
 
 st.divider()
 
-# Presentación Centralizada con Logo e Iluminación
+# Logo oficial con marco animado en dorado/plateado
 st.markdown("""
 <div class="logo-container">
     <div style="text-align:center;">
-        <img src="https://i.ibb.co/6y4G1m0/rifas-sirio-logo.png" class="logo-animated" alt="Rifas Sirio RD" onerror="this.src='https://via.placeholder.com/300x120?text=RIFAS+SIRIO+RD';">
+        <img src="https://i.ibb.co/6y4G1m0/rifas-sirio-logo.png" class="logo-animated" alt="Rifas Sirio RD">
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -419,8 +461,8 @@ for idx, r in enumerate(rifas):
             st.caption(f"Categoría: {r[2]} | Sorteo: {r[7]}")
             st.markdown(f"**Precio por boleto:** <span style='color:#f5c518; font-size:18px;'>RD$ {r[3]:,.2f}</span>", unsafe_allow_html=True)
 
-            # Botón actualizado a 'JUGAR'
             if st.button("🎮 JUGAR", key=f"btn_jugar_{r[0]}", use_container_width=True):
                 st.session_state["selected_rifa"] = r
                 st.session_state["active_dialog"] = "combos"
                 st.rerun()
+                
