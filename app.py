@@ -7,81 +7,109 @@ DB_FILE = "rifas_v4.db"
 
 st.set_page_config(
     page_title="Rifas Sirio RD",
-    page_icon="🎲",
+    page_icon="logo.png" if os.path.exists("logo.png") else "🎲",
     layout="wide"
 )
 
 # =========================================================
-# ESTILOS CSS PERSONALIZADOS Y ANIMACIÓN DEL LOGO
+# GESTIÓN DE TEMA (CLARO / OSCURO)
 # =========================================================
-st.markdown("""
-<style>
-    .stApp {
-        background: linear-gradient(135deg, #0f141d 0%, #1a2232 50%, #111723 100%);
-        color: #FFFFFF;
-    }
-    
-    /* Animación de luz dorada/plateada en el logo */
-    @keyframes goldSilverGlow {
-        0% {
-            box-shadow: 0 0 15px #ffd700, 0 0 30px #c0c0c0, inset 0 0 10px #ffd700;
-            border-color: #ffd700;
-        }
-        50% {
-            box-shadow: 0 0 35px #ffffff, 0 0 60px #e6c619, inset 0 0 20px #ffffff;
-            border-color: #ffffff;
-        }
-        100% {
-            box-shadow: 0 0 15px #ffd700, 0 0 30px #c0c0c0, inset 0 0 10px #ffd700;
-            border-color: #ffd700;
-        }
-    }
+if "theme_mode" not in st.session_state:
+    st.session_state["theme_mode"] = "dark"
 
-    .logo-container {
+def toggle_theme():
+    st.session_state["theme_mode"] = "light" if st.session_state["theme_mode"] == "dark" else "dark"
+
+is_dark = st.session_state["theme_mode"] == "dark"
+
+# Paleta de colores
+bg_style = """
+    background-color: #0b0f17;
+    background-image: 
+        radial-gradient(#d4af37 0.75px, transparent 0.75px), 
+        repeating-linear-gradient(45deg, rgba(212, 175, 55, 0.05) 0, rgba(212, 175, 55, 0.05) 10px, transparent 0, transparent 20px);
+    background-size: 15px 15px, 40px 40px;
+    color: #FFFFFF;
+""" if is_dark else """
+    background-color: #f8fafc;
+    background-image: 
+        radial-gradient(#c0a028 0.85px, transparent 0.85px), 
+        repeating-linear-gradient(45deg, rgba(212, 175, 55, 0.08) 0, rgba(212, 175, 55, 0.08) 10px, transparent 0, transparent 20px);
+    background-size: 15px 15px, 40px 40px;
+    color: #0f172a;
+"""
+
+text_color = "#FFFFFF" if is_dark else "#0f172a"
+
+# =========================================================
+# ESTILOS CSS PERSONALIZADOS
+# =========================================================
+st.markdown(f"""
+<style>
+    .stApp {{
+        {bg_style}
+    }}
+    
+    /* Animación de luz dorada alrededor del logo central */
+    @keyframes goldGlow {{
+        0% {{
+            box-shadow: 0 0 12px #ffd700, 0 0 25px rgba(255, 215, 0, 0.4);
+            border-color: #ffd700;
+        }}
+        50% {{
+            box-shadow: 0 0 28px #ffffff, 0 0 45px rgba(255, 215, 0, 0.8);
+            border-color: #ffffff;
+        }}
+        100% {{
+            box-shadow: 0 0 12px #ffd700, 0 0 25px rgba(255, 215, 0, 0.4);
+            border-color: #ffd700;
+        }}
+    }}
+
+    .logo-hero-container {{
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 20px 0;
-    }
+        margin: 15px 0;
+    }}
 
-    .logo-animated {
-        width: 420px;
-        max-width: 90%;
-        border-radius: 18px;
+    .logo-hero-animated {{
+        width: 260px;
+        max-width: 80%;
+        border-radius: 16px;
         border: 3px solid #ffd700;
-        animation: goldSilverGlow 2.5s infinite ease-in-out;
-        padding: 4px;
+        animation: goldGlow 2.5s infinite ease-in-out;
+        padding: 6px;
         background-color: #000000;
-    }
+    }}
 
-    /* Tarjeta de detalles bancarios con sello oficial */
-    .bank-card-container {
+    .bank-card-container {{
         position: relative;
         background: linear-gradient(145deg, #1e293b, #0f172a);
         border: 2px solid #38bdf8;
         border-radius: 12px;
         padding: 20px;
         margin-top: 15px;
+        color: #ffffff;
         box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    }
+    }}
 
-    .bcrd-seal {
+    .bcrd-seal {{
         position: absolute;
         top: 15px;
         right: 15px;
-        width: 55px;
+        width: 50px;
         opacity: 0.9;
-        filter: drop-shadow(0 0 4px rgba(255,255,255,0.3));
-    }
+    }}
 
-    .badge-pop {
+    .badge-pop {{
         background: linear-gradient(90deg, #f5c518, #ff8c00);
         color: #000;
         font-weight: bold;
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 11px;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -204,7 +232,7 @@ def modal_combos():
 
     rifa_id, nombre, categoria, precio, min_boletos, total_boletos, imagen, fecha = rifa_datos
 
-    st.markdown("<h3 style='text-align: center; color: #FFFFFF;'>Selecciona un paquete o elige cantidad personalizada</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'>Selecciona un paquete o elige cantidad personalizada</h3>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #f5c518;'>A mayor cantidad, más oportunidades de ganar</p>", unsafe_allow_html=True)
 
     paquetes = [
@@ -280,7 +308,6 @@ def modal_pago_detalles():
 
     st.divider()
 
-    # FORMULARIO: Se eliminó el campo de correo electrónico
     nombre_c = st.text_input("Nombre completo *", placeholder="Ej: Juan Pérez")
     telefono_c = st.text_input("Teléfono (WhatsApp) *", placeholder="+1 (829) 000-0000")
 
@@ -292,14 +319,13 @@ def modal_pago_detalles():
     metodos = obtener_metodos_pago()
     banco_seleccionado = None
 
-    # Botones con imágenes pequeñas de Banreservas.png y Popular.png
     cols = st.columns(len(metodos) if metodos else 1)
     for idx, m in enumerate(metodos):
         m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
         with cols[idx]:
             with st.container(border=True):
                 if m_img and os.path.exists(m_img):
-                    st.image(m_img, width=110)
+                    st.image(m_img, width=100)
                 else:
                     st.markdown(f"### {m_nombre}")
                 
@@ -307,24 +333,21 @@ def modal_pago_detalles():
                     st.session_state["banco_activo_id"] = m_id
                     st.rerun()
 
-    # Cuadro de detalles (Solo visible al tocar una imagen/botón)
     if st.session_state["banco_activo_id"]:
         banco_sel = next((m for m in metodos if m[0] == st.session_state["banco_activo_id"]), None)
         if banco_sel:
             banco_seleccionado = banco_sel[1]
             
-            # Render del cuadro con sello del Banco Central de la RD
             st.markdown(f"""
             <div class="bank-card-container">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Logo_del_Banco_Central_de_la_Rep%C3%BAblica_Dominicana.png" class="bcrd-seal" alt="BCRD">
                 <h4 style="color: #38bdf8; margin-top:0;">🏦 {banco_sel[1]}</h4>
                 <p style="margin: 4px 0;"><strong>Titular:</strong> {banco_sel[2]}</p>
                 <p style="margin: 4px 0;"><strong>Tipo de cuenta:</strong> {banco_sel[3]}</p>
-                <p style="margin: 4px 0; font-size: 18px;"><strong>Número de cuenta:</strong></p>
+                <p style="margin: 4px 0; font-size: 16px;"><strong>Número de cuenta:</strong></p>
             </div>
             """, unsafe_allow_html=True)
             
-            # Campo numérico y botón para copiar
             c_acc, c_btn = st.columns([3, 1])
             with c_acc:
                 st.code(banco_sel[4], language=None)
@@ -381,50 +404,77 @@ elif st.session_state["active_dialog"] == "pago":
     modal_pago_detalles()
 
 # =========================================================
-# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO OFICIAL)
+# BARRA SUPERIOR DE NAVEGACIÓN
 # =========================================================
 
-# Navbar
-n1, n2, n3, n4 = st.columns([3, 1, 1, 2])
+n1, n2, n3, n4 = st.columns([2, 1, 1, 2])
+
 with n1:
-    st.markdown("## 🎲 **RIFAS SIRIO RD**")
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=140)
+    else:
+        st.markdown("## 🎲 **RIFAS SIRIO RD**")
+
 with n2:
-    st.button("Rifas", use_container_width=True)
+    # Botón Rifas con desplazamiento directo
+    st.markdown('<a href="#rifas-activas" style="text-decoration:none;"><button style="width:100%; padding:8px; border-radius:8px; border:1px solid #d4af37; background:transparent; color:#d4af37; font-weight:bold; cursor:pointer;">🎟️ Rifas</button></a>', unsafe_allow_html=True)
+
 with n3:
-    st.button("Ganadores", use_container_width=True)
+    # Botón de Cambio de Tema
+    btn_label = "☀️ Modo Claro" if is_dark else "🌙 Modo Oscuro"
+    st.button(btn_label, on_click=toggle_theme, use_container_width=True)
+
 with n4:
-    if st.button("🔍 Verificar boleto", use_container_width=True):
+    if st.button("🔍 Verificador de boletos", use_container_width=True):
         st.session_state["verificar_open"] = not st.session_state.get("verificar_open", False)
 
+# Panel de Verificación de Boletos
 if st.session_state.get("verificar_open", False):
-    with st.expander("🔎 Verificador de Boletos", expanded=True):
-        tel_ver = st.text_input("Ingresa tu número de WhatsApp:")
-        if st.button("Consultar Boletos"):
-            conn = conectar()
-            res = conn.execute("SELECT numero, estado FROM boletos WHERE usuario_telefono=?", (normalizar_telefono(tel_ver),)).fetchall()
-            conn.close()
-            if res:
-                for b in res:
-                    st.write(f"• Boleto: **{b[0]}** | Estado: `{b[1]}`")
-            else:
-                st.warning("No hay boletos registrados con este número.")
+    with st.expander("🔎 CONSULTAR MIS BOLETOS REGISTRADOS", expanded=True):
+        tel_ver = st.text_input("Ingresa tu número de teléfono / WhatsApp registrado:")
+        if st.button("Consultar Ahora"):
+            if tel_ver:
+                conn = conectar()
+                query = """
+                    SELECT b.numero, b.estado, r.nombre, b.fecha_reserva 
+                    FROM boletos b
+                    JOIN rifas r ON b.rifa_id = r.id
+                    WHERE b.usuario_telefono = ?
+                """
+                res = conn.execute(query, (normalizar_telefono(tel_ver),)).fetchall()
+                conn.close()
+                
+                if res:
+                    st.success(f"Se encontraron **{len(res)}** boletos asociados al número.")
+                    cols_ver = st.columns(3)
+                    for idx, b in enumerate(res):
+                        num, est, rifa_nom, fecha_res = b
+                        with cols_ver[idx % 3]:
+                            with st.container(border=True):
+                                st.markdown(f"🎟️ **Boleto:** `{num}`")
+                                st.caption(f"Rifa: {rifa_nom}")
+                                st.write(f"Estado: **{est.upper()}**")
+                else:
+                    st.warning("No se encontraron boletos registrados con este número.")
 
 st.divider()
 
-# Logo oficial con marco animado en dorado/plateado
-st.markdown("""
-<div class="logo-container">
-    <div style="text-align:center;">
-        <img src="https://i.ibb.co/6y4G1m0/rifas-sirio-logo.png" class="logo-animated" alt="Rifas Sirio RD">
-    </div>
-</div>
-""", unsafe_allow_html=True)
+# =========================================================
+# PRESENTACIÓN PRINCIPAL (HERO SECTION CON LOGO EN TAMAÑO PERFECTO)
+# =========================================================
 
-st.markdown("""
+st.markdown('<div class="logo-hero-container">', unsafe_allow_html=True)
+if os.path.exists("logo.png"):
+    st.image("logo.png", width=260)
+else:
+    st.warning("Coloca el archivo 'logo.png' en la misma carpeta del script.")
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown(f"""
 <div style="text-align: center; margin-bottom: 25px;">
     <p style="color: #F5C518; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;">EXPERIENCIA EXCLUSIVA</p>
-    <h1 style="color: #FFFFFF; font-size: 36px; font-weight: 800; margin-top: 0;">Premios extraordinarios garantizados</h1>
-    <p style="color: #CCCCCC; font-size: 16px;">La plataforma más lujosa para participar y ganar de República Dominicana.</p>
+    <h1 style="color: {text_color}; font-size: 34px; font-weight: 800; margin-top: 0;">Premios extraordinarios garantizados</h1>
+    <p style="color: #888888; font-size: 16px;">La plataforma más lujosa para participar y ganar de República Dominicana.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -432,7 +482,7 @@ st.markdown("""
 with st.expander("❓ ¿CÓMO JUGAR? — 5 pasos simples para participar y ganar", expanded=False):
     st.markdown("""
     1. **Elige tu Rifa:** Selecciona el premio que deseas ganar en el catálogo.
-    2. **Haz clic en JUGAR:** Abre el panel de selección de combos.
+    2. **Haz clic en JUGAR:** Abre el panel de selección de paquetes.
     3. **Selecciona tu Paquete:** Elige la cantidad de números deseada.
     4. **Envía tu Comprobante:** Realiza tu transferencia a Banreservas o Banco Popular y sube la foto.
     5. **Asignación Aleatoria:** Al validar tu pago, se te asignan tus números al azar (revisión en un máximo de 24 horas).
@@ -441,10 +491,11 @@ with st.expander("❓ ¿CÓMO JUGAR? — 5 pasos simples para participar y ganar
 st.divider()
 
 # =========================================================
-# CATÁLOGO DE RIFAS ACTIVAS CON BOTÓN 'JUGAR'
+# CATÁLOGO DE RIFAS ACTIVAS CON ANCLA HTML
 # =========================================================
 
-st.markdown("<h2 style='color: #FFFFFF;'>🔥 Rifas Activas</h2>", unsafe_allow_html=True)
+st.markdown('<div id="rifas-activas"></div>', unsafe_allow_html=True)
+st.markdown(f"<h2 style='color: {text_color};'>🔥 Rifas Activas</h2>", unsafe_allow_html=True)
 
 conn = conectar()
 rifas = conn.execute("SELECT id, nombre, categoria, precio_boleto, min_boletos, total_boletos, imagen, fecha FROM rifas WHERE COALESCE(activa,1)=1").fetchall()
@@ -465,4 +516,3 @@ for idx, r in enumerate(rifas):
                 st.session_state["selected_rifa"] = r
                 st.session_state["active_dialog"] = "combos"
                 st.rerun()
-                
