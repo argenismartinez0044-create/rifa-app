@@ -477,7 +477,8 @@ for clave, valor in {
 # La contraseña se configura en .streamlit/secrets.toml:
 # ADMIN_PASSWORD = "TU_CONTRASEÑA"
 
-admin_mode = st.query_params.get("admin") == "1"
+admin_param = str(st.query_params.get("admin", "")).lower()
+admin_mode = admin_param in ("1", "true", "si", "sí", "administrador", "admin")
 
 if admin_mode:
     st.markdown('<div class="logo-hero-container">', unsafe_allow_html=True)
@@ -517,7 +518,64 @@ if admin_mode:
 if admin_mode and st.session_state["admin_autenticado"]:
 
     st.title("⚙️ Panel de administración")
-    st.caption("Desde aquí puedes revisar pagos y aprobar o rechazar solicitudes.")
+    st.caption("Control privado de Rifas Sirio RD")
+
+    menu_admin = st.radio(
+        "☰ Menú de administración",
+        ["📊 Resumen", "🧾 Pagos pendientes", "🎟️ Boletos", "🎲 Rifas", "🏦 Métodos de pago", "⚙️ Configuración"],
+        horizontal=True,
+        key="menu_admin"
+    )
+
+    if menu_admin != "🧾 Pagos pendientes":
+        conn = conectar()
+        if menu_admin == "📊 Resumen":
+            pendientes_n = conn.execute("SELECT COUNT(*) FROM solicitudes WHERE estado='pendiente'").fetchone()[0]
+            aprobadas_n = conn.execute("SELECT COUNT(*) FROM solicitudes WHERE estado='aprobada'").fetchone()[0]
+            rechazadas_n = conn.execute("SELECT COUNT(*) FROM solicitudes WHERE estado='rechazada'").fetchone()[0]
+            reservados_n = conn.execute("SELECT COUNT(*) FROM boletos WHERE estado='reservado'").fetchone()[0]
+            confirmados_n = conn.execute("SELECT COUNT(*) FROM boletos WHERE estado='confirmado'").fetchone()[0]
+            c1,c2,c3 = st.columns(3)
+            c1.metric("🕐 Pagos pendientes", pendientes_n)
+            c2.metric("🟢 Aprobadas", aprobadas_n)
+            c3.metric("🔴 Rechazadas", rechazadas_n)
+            c4,c5 = st.columns(2)
+            c4.metric("🟡 Boletos pendientes", reservados_n)
+            c5.metric("🎟️ Boletos aprobados", confirmados_n)
+            st.info("En '🧾 Pagos pendientes' puedes revisar el comprobante y aprobar o rechazar cada solicitud.")
+        elif menu_admin == "🎟️ Boletos":
+            st.subheader("🎟️ Control de boletos")
+            filtro = st.selectbox("Estado", ["Todos", "reservado", "confirmado", "disponible"])
+            if filtro == "Todos":
+                filas = conn.execute("SELECT b.numero,b.estado,r.nombre,b.usuario_nombre,b.usuario_telefono FROM boletos b JOIN rifas r ON b.rifa_id=r.id ORDER BY r.nombre,b.numero LIMIT 500").fetchall()
+            else:
+                filas = conn.execute("SELECT b.numero,b.estado,r.nombre,b.usuario_nombre,b.usuario_telefono FROM boletos b JOIN rifas r ON b.rifa_id=r.id WHERE b.estado=? ORDER BY r.nombre,b.numero LIMIT 500", (filtro,)).fetchall()
+            st.dataframe(filas, use_container_width=True, hide_index=True)
+        elif menu_admin == "🎲 Rifas":
+            st.subheader("🎲 Rifas")
+            filas = conn.execute("SELECT id,nombre,categoria,precio_boleto,total_boletos,fecha,activa FROM rifas ORDER BY id DESC").fetchall()
+            for rid,nombre,cat,precio,total,fecha,activa in filas:
+                with st.container(border=True):
+                    st.write(f"**{nombre}** · {cat} · RD$ {precio:,.2f} · {total} boletos")
+                    st.write(f"Sorteo: {fecha} · {'🟢 ACTIVA' if activa else '🔴 INACTIVA'}")
+                    if st.button("🔴 Desactivar" if activa else "🟢 Activar", key=f"rifa_admin_{rid}"):
+                        conn.execute("UPDATE rifas SET activa=? WHERE id=?", (0 if activa else 1,rid)); conn.commit(); st.rerun()
+        elif menu_admin == "🏦 Métodos de pago":
+            st.subheader("🏦 Métodos de pago")
+            filas = conn.execute("SELECT id,nombre,titular,tipo_cuenta,numero_cuenta,activo FROM metodos_pago ORDER BY nombre").fetchall()
+            for mid,nombre,titular,tipo,cuenta,activo in filas:
+                st.write(f"**{nombre}** · {tipo} · {cuenta} · Titular: {titular}")
+                if st.button("Desactivar" if activo else "Activar", key=f"metodo_admin_{mid}"):
+                    conn.execute("UPDATE metodos_pago SET activo=? WHERE id=?", (0 if activo else 1,mid)); conn.commit(); st.rerun()
+        elif menu_admin == "⚙️ Configuración":
+            st.subheader("⚙️ Configuración")
+            st.info("La contraseña se configura mediante ADMIN_PASSWORD en .streamlit/secrets.toml.")
+            st.write("**Soporte:** 829-483-5217")
+            st.write("**Estados:** disponible → reservado → confirmado")
+        conn.close()
+        if st.button("🚪 Cerrar sesión", key="admin_logout_menu"):
+            st.session_state["admin_autenticado"] = False; st.query_params.clear(); st.rerun()
+        st.stop()
 
     if st.button("🚪 Cerrar sesión"):
         st.session_state["admin_autenticado"] = False
@@ -993,6 +1051,35 @@ with n4:
             False
         )
 
+
+# =========================================================
+# MENÚ DEL CLIENTE
+# =========================================================
+
+with st.expander("☰ Menú de ayuda y configuración", expanded=False):
+    st.write("**🤖 Asistente rápido**")
+    pregunta = st.text_input("¿En qué podemos ayudarte?", placeholder="Ej.: ¿Cómo juego?", key="pregunta_cliente")
+    if pregunta:
+        q = pregunta.lower()
+        if "jugar" in q or "compr" in q:
+            respuesta = "Elige una rifa, selecciona la cantidad, completa tus datos, acepta los términos, realiza el pago y sube el comprobante."
+        elif "número" in q or "boleto" in q:
+            respuesta = "Tus números se asignan temporalmente al enviar la solicitud y aparecen como PENDIENTES DE VERIFICACIÓN hasta que el administrador revise el pago."
+        elif "aproba" in q or "pago" in q:
+            respuesta = "El administrador revisa el comprobante. El plazo informado es de 24 a 48 horas."
+        elif "rechaz" in q:
+            respuesta = "Si se rechaza el pago, los números temporales desaparecen de tu consulta y vuelven a estar disponibles."
+        else:
+            respuesta = "Puedo ayudarte con cómo jugar, comprar boletos, verificar números, pagos y estados. Si necesitas asistencia adicional, llama o escribe al 829-483-5217."
+        st.success(respuesta)
+
+    st.divider()
+    st.write("**❓ Cómo jugar**")
+    st.caption("1. Elige una rifa. 2. Selecciona tus boletos. 3. Completa tus datos. 4. Acepta los términos. 5. Realiza el pago y sube el comprobante. 6. Consulta tus números y su estado en 'Verificador de boletos'.")
+    st.write("**🔒 Privacidad**")
+    st.caption("Tus datos se utilizan para gestionar tu participación y verificar el pago.")
+    st.write("**📞 Soporte humano**")
+    st.caption("Si el asistente no puede resolver tu pregunta: 829-483-5217")
 
 # =========================================================
 # VERIFICADOR
