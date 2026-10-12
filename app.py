@@ -350,7 +350,7 @@ def init_db():
     # Mantiene los datos indicados para las cuentas bancarias principales.
     c.execute("""
         UPDATE metodos_pago
-        SET titular='Ariel Martínez', tipo_cuenta='Ahorro'
+        SET titular='Argenis Martínez', tipo_cuenta='Ahorro'
         WHERE LOWER(nombre) LIKE '%banreservas%'
            OR LOWER(nombre) LIKE '%popular%'
     """)
