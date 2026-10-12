@@ -162,6 +162,66 @@ st.markdown(f"""
         color: #f5c518;
         margin-bottom: 4px;
     }}
+
+    /* Animaciones sutiles de marca e imágenes */
+    @keyframes haloAzul {{
+        0% {{ box-shadow: 0 0 5px rgba(56,189,248,.45), 0 0 12px rgba(255,255,255,.2); }}
+        50% {{ box-shadow: 0 0 18px rgba(56,189,248,.95), 0 0 28px rgba(255,255,255,.65); }}
+        100% {{ box-shadow: 0 0 5px rgba(56,189,248,.45), 0 0 12px rgba(255,255,255,.2); }}
+    }}
+    @keyframes bordeLuz {{
+        0% {{ transform: rotate(0deg); }}
+        100% {{ transform: rotate(360deg); }}
+    }}
+    .logo-lightning {{
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: fit-content;
+        max-width: 100%;
+        margin: 12px auto;
+        padding: 5px;
+        border-radius: 18px;
+        animation: haloAzul 2.4s ease-in-out infinite;
+    }}
+    .logo-lightning img {{ display:block; max-width:100%; height:auto; border-radius:12px; }}
+    .stApp div[data-testid="stImage"] img {{
+        transition: transform .22s ease, filter .22s ease;
+    }}
+    .stApp div[data-testid="stImage"] img:hover {{
+        transform: scale(1.035);
+        filter: drop-shadow(0 0 7px rgba(56,189,248,.35));
+    }}
+    div.st-key-btn_ayuda button {{
+        position: fixed !important;
+        right: 24px !important;
+        bottom: 24px !important;
+        z-index: 999 !important;
+        width: 76px !important;
+        height: 76px !important;
+        min-height: 76px !important;
+        border-radius: 50% !important;
+        border: 2px solid #ffe08a !important;
+        background: radial-gradient(circle at 30% 25%, #fff1b8, #d4af37 55%, #8b6914) !important;
+        color: #101010 !important;
+        font-weight: 800 !important;
+        white-space: normal !important;
+        line-height: 1.05 !important;
+        padding: 7px !important;
+        animation: haloAzul 2s ease-in-out infinite;
+    }}
+    .bank-card-button button {{
+        width: 100%;
+        min-height: 92px;
+        border: 1px solid #334155;
+        border-radius: 12px;
+    }}
+    .bank-card-button button:hover {{
+        border-color: #38bdf8;
+        box-shadow: 0 0 14px rgba(56,189,248,.35);
+    }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -250,8 +310,8 @@ def init_db():
     # Actualiza los precios y las descripciones también en bases de datos existentes.
     c.execute("""
         UPDATE rifas
-        SET precio_boleto=10, min_boletos=10,
-            descripcion='Compra mínima de 10 boletos. Primer lugar: PlayStation 5 Pro. Segundo lugar: PlayStation 5 Pro. Tercer lugar: RD$15,000 en efectivo.'
+        SET precio_boleto=5, min_boletos=20,
+            descripcion='Compra mínima de 20 boletos. Primer ganador: PlayStation 5 Pro. Segundo ganador: RD$15,000 en efectivo. Tercer ganador: RD$10,000 en efectivo.'
         WHERE LOWER(nombre) LIKE '%playstation%'
     """)
     c.execute("""
@@ -275,7 +335,7 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
         iniciales = [
-            ("PlayStation 5 Pro", "JUEGOS", 10.0, 10, 10000, "play.jpg", "Fecha pendiente"),
+            ("PlayStation 5 Pro", "JUEGOS", 5.0, 20, 10000, "play.jpg", "Fecha pendiente"),
             ("5 iPhone 17 Pro Max", "TECNOLOGÍA", 15.0, 10, 10000, "iphone.jpg", "Al vender el 80%")
         ]
 
@@ -289,7 +349,7 @@ def init_db():
         c.execute("""
             UPDATE rifas SET descripcion=?
             WHERE LOWER(nombre) LIKE '%playstation%'
-        """, ("Compra mínima de 10 boletos. Primer lugar: PlayStation 5 Pro. Segundo lugar: PlayStation 5 Pro. Tercer lugar: RD$15,000 en efectivo.",))
+        """, ("Compra mínima de 20 boletos. Primer ganador: PlayStation 5 Pro. Segundo ganador: RD$15,000 en efectivo. Tercer ganador: RD$10,000 en efectivo.",))
         c.execute("""
             UPDATE rifas SET descripcion=?
             WHERE LOWER(nombre) LIKE '%iphone%'
@@ -304,6 +364,30 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+def mostrar_logo(ancho=220):
+    """Muestra el logo con un halo azul/blanco animado, sin marcas adicionales."""
+    if os.path.exists("logo.png"):
+        with open("logo.png", "rb") as archivo_logo:
+            imagen_codificada = base64.b64encode(archivo_logo.read()).decode("utf-8")
+        st.markdown(
+            f'<div class="logo-lightning"><img src="data:image/png;base64,{imagen_codificada}" '
+            f'alt="Logo Rifas Sirio RD" style="width:{ancho}px;"></div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown("## 🎲 RIFAS SIRIO RD")
+
+
+def ocultar_telefono(telefono):
+    digitos = "".join(ch for ch in str(telefono) if ch.isdigit())
+    if len(digitos) >= 10:
+        digitos = digitos[-10:]
+        return "******" + digitos[-4:]
+    if len(digitos) > 4:
+        return "*" * (len(digitos) - 4) + digitos[-4:]
+    return "*" * len(digitos)
 
 
 def guardar_imagen(uploaded, carpeta, base):
@@ -486,6 +570,11 @@ for clave, valor in {
     "selected_boletos_qty": 10,
     "banco_activo_id": None,
     "verificar_open": False,
+    "ayuda_open": False,
+    "compra_numeros": [],
+    "compra_rifa_nombre": "",
+    "solo_numeros_compra": False,
+    "solo_numeros_verificador": False,
     "admin_autenticado": False
 }.items():
     if clave not in st.session_state:
@@ -505,12 +594,7 @@ admin_param = str(st.query_params.get("admin", "")).lower()
 admin_mode = admin_param in ("1", "true", "si", "sí", "administrador", "admin")
 
 if admin_mode:
-    st.markdown('<div class="logo-hero-container">', unsafe_allow_html=True)
-
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=180)
-
-    st.markdown("</div>", unsafe_allow_html=True)
+    mostrar_logo(180)
 
     if not st.session_state["admin_autenticado"]:
         st.title("Acceso privado")
@@ -742,6 +826,7 @@ def modal_combos():
         {"nombre": "AMATEUR", "boletos": 5, "icon": "🏁"},
         {"nombre": "PRO", "boletos": 10, "icon": "🚀"},
         {"nombre": "ELITE", "boletos": 15, "icon": "🏆"},
+        {"nombre": "INICIAL", "boletos": 20, "icon": "🎟️"},
         {"nombre": "CAMPEÓN", "boletos": 25, "icon": "👑"},
         {"nombre": "LEYENDA", "boletos": 50, "icon": "⚡"},
         {"nombre": "MÍTICO", "boletos": 100, "icon": "🔥"}
@@ -847,9 +932,9 @@ def modal_pago_detalles():
     st.markdown(f"### TOTAL A PAGAR: **RD$ {total_pagar:,.2f}**")
 
     st.info(
-        "Los números NO se asignan todavía. "
-        "Primero revisaremos tu comprobante. "
-        "Después de aprobar el pago, el sistema asignará tus números automáticamente."
+        "Al enviar tu compra, el sistema asignará tus números al azar y los mostrará "
+        "como **En verificación** mientras revisamos el comprobante. "
+        "La confirmación puede tardar entre 24 y 48 horas."
     )
 
     st.divider()
@@ -870,53 +955,27 @@ def modal_pago_detalles():
     metodos = obtener_metodos_pago()
     banco_seleccionado = None
 
-    cols_bancos = st.columns(len(metodos) if metodos else 1)
-
-    for idx, m in enumerate(metodos):
-        m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
-        es_seleccionado = (
-            st.session_state.get("banco_activo_id") == m_id
-        )
-
-        with cols_bancos[idx]:
-            st.markdown(
-                '<div class="bank-card-wrapper">',
-                unsafe_allow_html=True
-            )
-
-            if m_img and os.path.exists(m_img):
-                with open(m_img, "rb") as img_f:
-                    encoded = base64.b64encode(img_f.read()).decode()
-
-                img_element = (
-                    f'<img src="data:image/png;base64,{encoded}" '
-                    f'class="bank-icon-img"/>'
-                )
-            else:
-                img_element = '<div style="font-size:28px;">🏦</div>'
-
-            if st.button(" ", key=f"btn_card_{m_id}"):
-                st.session_state["banco_activo_id"] = m_id
-                st.rerun()
-
-            selected_class = (
-                "bank-card-selected" if es_seleccionado else ""
-            )
-
-            st.markdown(
-                f"""
-                <div class="bank-card-btn {selected_class}">
-                    {img_element}
-                    <span class="bank-title-text">
-                        {m_nombre}<br>
-                        <small>({m_tipo.upper()})</small>
-                    </span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            st.markdown("</div>", unsafe_allow_html=True)
+    if metodos:
+        cols_bancos = st.columns(min(len(metodos), 3))
+        for idx, m in enumerate(metodos):
+            m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
+            es_seleccionado = st.session_state.get("banco_activo_id") == m_id
+            with cols_bancos[idx % len(cols_bancos)]:
+                if m_img and os.path.exists(m_img):
+                    st.image(m_img, width=90)
+                else:
+                    st.markdown("### 🏦")
+                st.markdown(f"**{m_nombre}**")
+                st.caption(m_tipo)
+                if st.button(
+                    "✓ Banco seleccionado" if es_seleccionado else f"Usar {m_nombre}",
+                    key=f"btn_card_{m_id}",
+                    use_container_width=True
+                ):
+                    st.session_state["banco_activo_id"] = m_id
+                    st.rerun()
+    else:
+        st.warning("No hay métodos de pago activos en este momento.")
 
     if st.session_state.get("banco_activo_id"):
         banco_sel = next(
@@ -976,7 +1035,7 @@ def modal_pago_detalles():
     ])
 
     if st.button(
-        "🛒 ENVIAR SOLICITUD DE COMPRA",
+        "🛒 COMPRAR BOLETOS",
         disabled=not listo,
         use_container_width=True
     ):
@@ -1021,25 +1080,184 @@ def modal_pago_detalles():
             st.error(str(numeros))
             return
 
-        st.session_state["active_dialog"] = None
+        st.session_state["compra_numeros"] = sorted(numeros)
+        st.session_state["compra_rifa_nombre"] = nombre
+        st.session_state["solo_numeros_compra"] = False
+        st.session_state["active_dialog"] = "resultado_compra"
         st.session_state["banco_activo_id"] = None
+        st.rerun()
 
-        st.success("🎉 Solicitud enviada correctamente.")
-        st.warning(
-            "⏳ Tus números ya fueron asignados temporalmente y aparecen como "
-            "PENDIENTES DE VERIFICACIÓN. La revisión puede tardar entre 24 y 48 horas."
+
+# =========================================================
+# VENTANAS DE RESULTADO, AYUDA Y VERIFICADOR
+# =========================================================
+
+@st.dialog("Compra registrada", width="large")
+def modal_resultado_compra():
+    numeros = st.session_state.get("compra_numeros", [])
+    if st.session_state.get("solo_numeros_compra"):
+        st.markdown("### Solo números")
+        st.code(" · ".join(numeros) if numeros else "No hay números guardados.")
+    else:
+        st.success("Tu solicitud fue recibida correctamente.")
+        st.write(f"**Rifa:** {st.session_state.get('compra_rifa_nombre', '')}")
+        st.info("Tus boletos están **En verificación**. La revisión del pago puede tardar entre 24 y 48 horas.")
+        st.markdown("### 🎟️ Números asignados")
+        if numeros:
+            cols = st.columns(4)
+            for i, numero in enumerate(numeros):
+                with cols[i % 4]:
+                    with st.container(border=True):
+                        st.markdown(f"### {numero}")
+                        st.warning("En verificación")
+    b1, b2 = st.columns(2)
+    with b1:
+        if st.button("Solo números", key="solo_numeros_compra_btn", use_container_width=True):
+            st.session_state["solo_numeros_compra"] = not st.session_state.get("solo_numeros_compra", False)
+            st.rerun()
+    with b2:
+        if st.button("Cerrar", key="cerrar_resultado_compra", use_container_width=True):
+            st.session_state["active_dialog"] = None
+            st.rerun()
+
+
+@st.dialog("¿Necesitas ayuda?", width="small")
+def modal_ayuda():
+    st.write("Te llevaremos a WhatsApp para que puedas escribir a nuestro equipo de soporte.")
+    if st.button("Cómo jugar", key="boton_como_jugar_ayuda", use_container_width=True):
+        st.session_state["mostrar_pasos_ayuda"] = not st.session_state.get("mostrar_pasos_ayuda", False)
+        st.rerun()
+    if st.session_state.get("mostrar_pasos_ayuda", False):
+        st.markdown(
+            "1. Elige una rifa activa.\n"
+            "2. Selecciona un paquete o la cantidad que deseas comprar.\n"
+            "3. Completa tu nombre y teléfono.\n"
+            "4. Selecciona el banco y realiza el pago.\n"
+            "5. Sube el comprobante y acepta los términos.\n"
+            "6. Pulsa **Comprar boletos**. Guarda los números asignados y consulta su estado.\n"
+            "7. Los números estarán **En verificación** hasta que el administrador apruebe el pago; puede tardar de 24 a 48 horas."
         )
+    a1, a2 = st.columns(2)
+    with a1:
+        if st.button("Cancelar", key="cerrar_ayuda", use_container_width=True):
+            st.session_state["ayuda_open"] = False
+            st.rerun()
+    with a2:
+        st.link_button("Abrir WhatsApp", "https://wa.me/18294835217", use_container_width=True)
 
 
-# =========================================================
-# ABRIR MODALES
-# =========================================================
+@st.dialog("🔎 Verificador", width="large")
+def modal_verificador():
+    st.write("Elige la rifa e ingresa tu teléfono (10 números) o el número de boleto.")
+    conn = conectar()
+    rifas_disponibles = conn.execute("SELECT id, nombre FROM rifas ORDER BY nombre").fetchall()
+    conn.close()
+    if not rifas_disponibles:
+        st.warning("No hay rifas registradas.")
+        return
+    nombres_rifas = {nombre: rid for rid, nombre in rifas_disponibles}
+    rifa_nombre = st.selectbox("Selecciona una rifa", list(nombres_rifas.keys()), key="verificador_rifa")
+    busqueda = st.text_input("Teléfono (10 números) o número de boleto", key="verificador_busqueda")
+    if st.button("Consultar", key="btn_consultar_verificador", use_container_width=True):
+        conn = conectar()
+        rifa_id = nombres_rifas[rifa_nombre]
+        busqueda_limpia = normalizar_telefono(busqueda)
+        digitos = "".join(ch for ch in busqueda_limpia if ch.isdigit())
+        resultados = []
+        if len(digitos) >= 10:
+            telefono = digitos[-10:]
+            resultados = conn.execute("""
+                SELECT b.numero, b.estado, b.usuario_nombre, b.usuario_telefono,
+                       b.solicitud_id, b.fecha_reserva, s.fecha_solicitud
+                FROM boletos b
+                LEFT JOIN solicitudes s ON s.id=b.solicitud_id
+                WHERE b.rifa_id=?
+                  AND (b.usuario_telefono=? OR b.usuario_telefono LIKE '%' || ?)
+                  AND b.estado IN ('reservado','confirmado')
+                ORDER BY b.numero
+            """, (rifa_id, telefono, telefono)).fetchall()
+            st.session_state["solo_numeros_verificador"] = False
+            st.session_state["verificador_resultados"] = resultados
+            st.session_state["verificador_modo"] = "telefono"
+        elif busqueda.strip():
+            numero = busqueda.strip()
+            if numero.isdigit() and len(numero) <= 5:
+                numero = numero.zfill(5)
+            resultado = conn.execute("""
+                SELECT b.numero, b.estado, b.usuario_nombre, b.usuario_telefono,
+                       b.solicitud_id, b.fecha_reserva, s.fecha_solicitud
+                FROM boletos b
+                LEFT JOIN solicitudes s ON s.id=b.solicitud_id
+                WHERE b.rifa_id=? AND b.numero=?
+                LIMIT 1
+            """, (rifa_id, numero)).fetchone()
+            st.session_state["verificador_resultados"] = [resultado] if resultado else []
+            st.session_state["solo_numeros_verificador"] = False
+            st.session_state["verificador_modo"] = "boleto"
+        else:
+            st.session_state["verificador_resultados"] = []
+            st.warning("Escribe un teléfono o un número de boleto.")
+        conn.close()
+        st.rerun()
+
+    resultados = st.session_state.get("verificador_resultados", [])
+    if resultados:
+        modo = st.session_state.get("verificador_modo", "telefono")
+        if st.session_state.get("solo_numeros_verificador"):
+            st.subheader("Solo números")
+            st.code(" · ".join(str(x[0]) for x in resultados))
+        elif modo == "telefono":
+            st.subheader("Todos tus números en esta rifa")
+            st.caption("Los números pendientes aparecerán como En verificación y los confirmados como Aprobados.")
+            cols = st.columns(4)
+            for i, fila in enumerate(resultados):
+                numero, estado, nombre, telefono, orden, fecha_reserva, fecha_solicitud = fila
+                with cols[i % 4]:
+                    with st.container(border=True):
+                        st.markdown(f"### {numero}")
+                        if estado == "confirmado":
+                            st.success("Aprobados")
+                        else:
+                            st.warning("En verificación")
+        else:
+            numero, estado, nombre, telefono, orden, fecha_reserva, fecha_solicitud = resultados[0]
+            if estado == "disponible" or not nombre:
+                st.info(f"El boleto {numero} aún no se le ha asignado a nadie.")
+            else:
+                st.markdown(f"### Boleto {numero} · Adquirido")
+                st.write(f"**# de orden:** {orden if orden else 'Pendiente de registro'}")
+                st.write(f"**Nombre del participante:** {nombre}")
+                st.write(f"**Teléfono:** {ocultar_telefono(telefono)}")
+                st.write(f"**Fecha de registro:** {fecha_solicitud or fecha_reserva or 'No disponible'}")
+                st.write(f"**Estado:** {'Aprobados' if estado == 'confirmado' else 'En verificación'}")
+    elif "verificador_resultados" in st.session_state:
+        if st.session_state.get("verificador_busqueda", "").strip():
+            st.info("No se encontraron boletos asignados con esos datos para esta rifa.")
+
+    if st.session_state.get("verificador_resultados"):
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Solo números", key="verificador_solo_numeros", use_container_width=True):
+                st.session_state["solo_numeros_verificador"] = not st.session_state.get("solo_numeros_verificador", False)
+                st.rerun()
+        with c2:
+            if st.button("Cerrar verificador", key="cerrar_verificador", use_container_width=True):
+                st.session_state["verificar_open"] = False
+                st.session_state.pop("verificador_resultados", None)
+                st.rerun()
+
 
 if st.session_state["active_dialog"] == "combos":
     modal_combos()
-
 elif st.session_state["active_dialog"] == "pago":
     modal_pago_detalles()
+elif st.session_state["active_dialog"] == "resultado_compra":
+    modal_resultado_compra()
+
+if st.session_state.get("ayuda_open", False):
+    modal_ayuda()
+if st.session_state.get("verificar_open", False):
+    modal_verificador()
 
 
 # =========================================================
@@ -1049,10 +1267,7 @@ elif st.session_state["active_dialog"] == "pago":
 n1, n2, n3, n4 = st.columns([2, 1, 1, 2])
 
 with n1:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=140)
-    else:
-        st.markdown("## 🎲 RIFAS SIRIO RD")
+    mostrar_logo(140)
 
 with n2:
     st.markdown(
@@ -1076,14 +1291,14 @@ with n3:
         st.rerun()
 
 with n4:
-    if st.button(
-        "🔍 Verificador de boletos",
-        use_container_width=True
-    ):
-        st.session_state["verificar_open"] = not st.session_state.get(
-            "verificar_open",
-            False
-        )
+    if st.button("🔎 Verificador de boletos", use_container_width=True):
+        st.session_state["verificar_open"] = True
+        st.rerun()
+
+
+if st.button("¿Necesitas\nayuda?", key="btn_ayuda", help="Abrir ayuda y soporte"):
+    st.session_state["ayuda_open"] = True
+    st.rerun()
 
 
 # =========================================================
@@ -1115,139 +1330,14 @@ with st.expander("☰ Menú de ayuda y configuración", expanded=False):
     st.write("**📞 Soporte humano**")
     st.caption("Si el asistente no puede resolver tu pregunta: 829-483-5217")
 
-# =========================================================
-# VERIFICADOR
-# =========================================================
-
-if st.session_state.get("verificar_open", False):
-    with st.expander(
-        "🔎 CONSULTAR MIS BOLETOS",
-        expanded=True
-    ):
-        tel_ver = st.text_input(
-            "Ingresa tu número de teléfono / WhatsApp registrado:"
-        )
-
-        if st.button("Consultar Ahora"):
-            if tel_ver.strip():
-                telefono_busqueda = normalizar_telefono(tel_ver)
-
-                conn = conectar()
-
-                solicitudes = conn.execute("""
-                    SELECT
-                        s.id,
-                        s.nombre,
-                        s.cantidad,
-                        s.estado,
-                        s.fecha_solicitud,
-                        r.nombre
-                    FROM solicitudes s
-                    JOIN rifas r ON s.rifa_id = r.id
-                    WHERE s.telefono=?
-                    ORDER BY s.fecha_solicitud DESC
-                """, (telefono_busqueda,)).fetchall()
-
-                boletos = conn.execute("""
-                    SELECT
-                        b.numero,
-                        b.estado,
-                        r.nombre
-                    FROM boletos b
-                    JOIN rifas r ON b.rifa_id=r.id
-                    WHERE b.usuario_telefono=?
-                    ORDER BY r.nombre, b.numero
-                """, (telefono_busqueda,)).fetchall()
-
-                conn.close()
-
-                if solicitudes or boletos:
-                    if solicitudes:
-                        st.subheader("Solicitudes")
-
-                        for sol in solicitudes:
-                            (
-                                sol_id,
-                                sol_nombre,
-                                sol_cantidad,
-                                sol_estado,
-                                sol_fecha,
-                                sol_rifa
-                            ) = sol
-
-                            if sol_estado == "pendiente":
-                                st.warning(
-                                    f"🟡 Solicitud #{sol_id} · "
-                                    f"{sol_rifa} · "
-                                    f"{sol_cantidad} boletos · "
-                                    f"PENDIENTE DE VERIFICACIÓN"
-                                )
-                                st.caption(
-                                    "Los números mostrados abajo están reservados temporalmente. "
-                                    "Si el pago es rechazado, volverán a estar disponibles."
-                                )
-
-                            elif sol_estado == "aprobada":
-                                st.success(
-                                    f"🟢 Solicitud #{sol_id} · {sol_rifa} · "
-                                    f"APROBADA"
-                                )
-
-                            elif sol_estado == "rechazada":
-                                st.error(
-                                    f"🔴 Solicitud #{sol_id} · "
-                                    f"{sol_rifa} · RECHAZADA"
-                                )
-
-                    if boletos:
-                        st.subheader("🎟️ Números asignados")
-
-                        cols = st.columns(3)
-
-                        for idx, boleto in enumerate(boletos):
-                            numero, estado, rifa_nom = boleto
-
-                            with cols[idx % 3]:
-                                with st.container(border=True):
-                                    st.markdown(
-                                        f"🎟️ **{numero}**"
-                                    )
-                                    st.caption(rifa_nom)
-                                    if estado == "reservado":
-                                        st.warning("🟡 PENDIENTE DE VERIFICACIÓN")
-                                    elif estado == "confirmado":
-                                        st.success("🟢 APROBADO")
-                                    else:
-                                        st.write(f"Estado: **{estado.upper()}**")
-
-                    if not boletos:
-                        st.info(
-                            "No tienes números activos en este momento. "
-                            "Si una solicitud fue rechazada, los números temporales "
-                            "fueron liberados y pueden ser asignados a otro usuario."
-                        )
-                else:
-                    st.warning(
-                        "No se encontraron solicitudes o boletos "
-                        "con este número."
-                    )
+# El verificador se presenta en una ventana modal definida anteriormente.
 
 
 # =========================================================
 # PRESENTACIÓN PRINCIPAL
 # =========================================================
 
-st.markdown(
-    '<div class="logo-hero-container">',
-    unsafe_allow_html=True
-)
-
-if os.path.exists("logo.png"):
-    st.image("logo.png", width=260)
-else:
-    st.warning("Coloca el archivo 'logo.png' en la misma carpeta.")
-
-st.markdown("</div>", unsafe_allow_html=True)
+mostrar_logo(260)
 
 st.markdown(
     f"""
@@ -1276,8 +1366,9 @@ with st.expander(
     2. **Selecciona tus boletos:** elige un paquete o cantidad.
     3. **Completa tus datos:** nombre y WhatsApp.
     4. **Realiza el pago:** selecciona el banco y sube tu comprobante.
-    5. **Espera la aprobación:** después de verificar el pago,
-       el sistema asignará tus números automáticamente.
+    5. **Pulsa Comprar boletos:** el sistema asignará números al azar al enviar la solicitud.
+    6. **Verificación:** tus números aparecerán como En verificación durante 24 a 48 horas.
+    7. **Aprobación:** al aprobar el pago, los números cambiarán a Aprobados.
     """)
 
 
