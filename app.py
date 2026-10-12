@@ -1,131 +1,96 @@
+import datetime
+import os
+import sqlite3
+import base64
+import streamlit as st
 
-st.markdown("</div>", unsafe_allow_html=True)
+DB_FILE = "rifas_v4.db"
 
-st.markdown(
-    f"""
-    <div style="text-align:center;margin-bottom:25px;">
-        <p style="color:#F5C518;font-weight:bold;letter-spacing:1px;">
-            EXPERIENCIA EXCLUSIVA
-        </p>
-        <h1 style="color:{text_color};font-size:34px;font-weight:800;">
-            Premios extraordinarios garantizados
-        </h1>
-        <p style="color:#888888;font-size:16px;">
-            Participa de forma sencilla y segura.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True
+st.set_page_config(
+    page_title="Rifas Sirio RD",
+    page_icon="logo.png" if os.path.exists("logo.png") else "🎲",
+    layout="wide"
 )
-
-
-with st.expander(
-    "❓ ¿CÓMO JUGAR? — 5 pasos simples",
-    expanded=False
-):
-    st.markdown("""
-    1. **Elige tu Rifa:** selecciona el premio que deseas.
-    2. **Selecciona tus boletos:** elige un paquete o cantidad.
-    3. **Completa tus datos:** nombre y WhatsApp.
-    4. **Realiza el pago:** selecciona el banco y sube tu comprobante.
-    5. **Espera la aprobación:** después de verificar el pago,
-       el sistema asignará tus números automáticamente.
-    """)
-
-
-st.divider()
-
 
 # =========================================================
-# CATÁLOGO DE RIFAS ACTIVAS
+# GESTIÓN DE TEMA (CLARO / OSCURO)
 # =========================================================
+if "theme_mode" not in st.session_state:
+    st.session_state["theme_mode"] = "dark"
 
-st.markdown(
-    '<div id="rifas-activas"></div>',
-    unsafe_allow_html=True
-)
+def toggle_theme():
+    st.session_state["theme_mode"] = "light" if st.session_state["theme_mode"] == "dark" else "dark"
 
-st.markdown(
-    f"<h2 style='color:{text_color};'>🔥 Rifas Activas</h2>",
-    unsafe_allow_html=True
-)
+is_dark = st.session_state["theme_mode"] == "dark"
 
-conn = conectar()
+bg_style = """
+    background-color: #0b0f17;
+    background-image: 
+        radial-gradient(#d4af37 0.75px, transparent 0.75px), 
+        repeating-linear-gradient(45deg, rgba(212, 175, 55, 0.05) 0, rgba(212, 175, 55, 0.05) 10px, transparent 0, transparent 20px);
+    background-size: 15px 15px, 40px 40px;
+    color: #FFFFFF;
+""" if is_dark else """
+    background-color: #f8fafc;
+    background-image: 
+        radial-gradient(#c0a028 0.85px, transparent 0.85px), 
+        repeating-linear-gradient(45deg, rgba(212, 175, 55, 0.08) 0, rgba(212, 175, 55, 0.08) 10px, transparent 0, transparent 20px);
+    background-size: 15px 15px, 40px 40px;
+    color: #0f172a;
+"""
 
-rifas = conn.execute("""
-    SELECT
-        id,
-        nombre,
-        categoria,
-        precio_boleto,
-        min_boletos,
-        total_boletos,
-        imagen,
-        fecha
-    FROM rifas
-    WHERE COALESCE(activa,1)=1
-""").fetchall()
+text_color = "#FFFFFF" if is_dark else "#0f172a"
 
-descripciones = dict(conn.execute(
-    "SELECT id, COALESCE(descripcion, '') FROM rifas"
-).fetchall())
+# =========================================================
+# ESTILOS CSS PERSONALIZADOS (BANCOS Y BARRA)
+# =========================================================
+st.markdown(f"""
+<style>
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
 
-conn.close()
+    .stApp {{
+        {bg_style}
+    }}
+    
+    .logo-hero-container {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 15px 0;
+    }}
 
-cols_rifas = st.columns(2)
+    .bank-card-container {{
+        position: relative;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 2px solid #38bdf8;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 15px;
+        color: #ffffff;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }}
 
-for idx, r in enumerate(rifas):
-    (
-        r_id,
-        r_nombre,
-        r_categoria,
-        r_precio,
-        r_min,
-        r_total,
-        r_img,
-        r_fecha
-    ) = r
+    .badge-pop {{
+        background: linear-gradient(90deg, #f5c518, #ff8c00);
+        color: #000;
+        font-weight: bold;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+    }}
 
-    porcentaje = obtener_porcentaje_rifa(r_id, r_total)
+    /* Contenedor interactivo para los botones de banco */
+    .bank-card-wrapper {{
+        position: relative;
+        width: 135px;
+        height: 110px;
+        margin: 0 auto;
+    }}
 
-    with cols_rifas[idx % 2]:
-        with st.container(border=True):
-
-            if r_img and os.path.exists(r_img):
-                st.image(r_img, use_container_width=True)
-
-            st.markdown(f"### {r_nombre}")
-            st.caption(
-                f"Categoría: {r_categoria} | Sorteo: {r_fecha}"
-            )
-            if descripciones.get(r_id):
-                st.write(descripciones[r_id])
-            st.caption(f"Compra mínima: {r_min} boletos.")
-
-            st.markdown(
-                f"**Precio por boleto:** "
-                f"<span style='color:#f5c518;font-size:18px;'>"
-                f"RD$ {r_precio:,.2f}</span>",
-                unsafe_allow_html=True
-            )
-
-            st.markdown(
-                f"""
-                <div class="progress-text">
-                    <span>Progreso de venta</span>
-                    <span>{porcentaje:.2f}%</span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            st.progress(porcentaje / 100.0)
-
-            if st.button(
-                "🎮 JUGAR",
-                key=f"btn_jugar_{r_id}",
-                use_container_width=True
-            ):
-                st.session_state["selected_rifa"] = r
-                st.session_state["active_dialog"] = "combos"
-                st.rerun()
+    /* Superposición transparente táctil y de clic sobre el 100% de la tarjeta */
+    .bank-card-wrapper div[data-testid="stButton"] {{
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
