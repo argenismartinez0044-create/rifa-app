@@ -3,6 +3,7 @@ import os
 import sqlite3
 import base64
 import streamlit as st
+import streamlit.components.v1 as components
 
 DB_FILE = "rifas_v4.db"
 
@@ -46,9 +47,23 @@ text_color = "#FFFFFF" if is_dark else "#0f172a"
 # =========================================================
 st.markdown(f"""
 <style>
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
+    /* Oculta elementos de marca/interfaz de Streamlit en la vista pública. */
+    #MainMenu {{visibility: hidden !important;}}
+    footer {{display: none !important; visibility: hidden !important;}}
+    header {{visibility: hidden !important;}}
+    #stDecoration,
+    .stDeployButton,
+    [data-testid="stAppDeployButton"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    .viewerBadge_container,
+    .viewerBadge_container__1QSob,
+    a[href*="streamlit.io"] {{
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }}
 
     .stApp {{
         {bg_style}
@@ -311,7 +326,7 @@ def init_db():
     c.execute("""
         UPDATE rifas
         SET precio_boleto=5, min_boletos=20,
-            descripcion='Compra mínima de 20 boletos. Primer ganador: PlayStation 5 Pro. Segundo ganador: RD$15,000 en efectivo. Tercer ganador: RD$10,000 en efectivo.'
+            descripcion='Compra mínima: 20 boletos. Primer ganador: una PlayStation 5 Pro. Segundo ganador: quince mil pesos (RD$15,000) en efectivo. Tercer ganador: diez mil pesos (RD$10,000) en efectivo.'
         WHERE LOWER(nombre) LIKE '%playstation%'
     """)
     c.execute("""
@@ -328,9 +343,17 @@ def init_db():
             (nombre, titular, tipo_cuenta, numero_cuenta, imagen, activo)
             VALUES (?,?,?,?,?,1)
         """, [
-            ("Banreservas", "ARGENIS MARTINEZ C.", "Ahorros", "9606561652", "banreservas.png"),
-            ("Banco Popular", "ARGENIS MARTINEZ", "Ahorros", "821794971", "popular.png")
+            ("Banreservas", "Ariel Martínez", "Ahorro", "9606561652", "banreservas.png"),
+            ("Banco Popular", "Ariel Martínez", "Ahorro", "821794971", "popular.png")
         ])
+
+    # Mantiene los datos indicados para las cuentas bancarias principales.
+    c.execute("""
+        UPDATE metodos_pago
+        SET titular='Ariel Martínez', tipo_cuenta='Ahorro'
+        WHERE LOWER(nombre) LIKE '%banreservas%'
+           OR LOWER(nombre) LIKE '%popular%'
+    """)
 
     c.execute("SELECT COUNT(*) FROM rifas")
     if c.fetchone()[0] == 0:
@@ -349,7 +372,7 @@ def init_db():
         c.execute("""
             UPDATE rifas SET descripcion=?
             WHERE LOWER(nombre) LIKE '%playstation%'
-        """, ("Compra mínima de 20 boletos. Primer ganador: PlayStation 5 Pro. Segundo ganador: RD$15,000 en efectivo. Tercer ganador: RD$10,000 en efectivo.",))
+        """, ("Compra mínima: 20 boletos. Primer ganador: una PlayStation 5 Pro. Segundo ganador: quince mil pesos (RD$15,000) en efectivo. Tercer ganador: diez mil pesos (RD$10,000) en efectivo.",))
         c.execute("""
             UPDATE rifas SET descripcion=?
             WHERE LOWER(nombre) LIKE '%iphone%'
@@ -897,34 +920,43 @@ def modal_pago_detalles():
     st.markdown(f"### {nombre}")
     st.caption(f"Compra mínima: {min_boletos} boletos.")
 
-    modo_p = st.radio(
-        "Modo",
-        ["PAQUETES", "CANTIDAD LIBRE"],
-        horizontal=True,
-        label_visibility="collapsed"
-    )
+    # El contador siempre aparece después de elegir un paquete.
+    # El cliente puede ajustar la cantidad, pero nunca bajar del mínimo de la rifa.
+    cantidad_actual = st.session_state["selected_boletos_qty"]
+    c1, c2, c3 = st.columns([1, 2, 1])
 
-    if modo_p == "CANTIDAD LIBRE":
-        c1, c2, c3 = st.columns([1, 2, 1])
-
-        with c1:
-            if st.button("➖", use_container_width=True):
-                if st.session_state["selected_boletos_qty"] > min_boletos:
-                    st.session_state["selected_boletos_qty"] -= 1
-                    st.rerun()
-
-        with c2:
-            st.markdown(
-                f"<h2 style='text-align:center;color:#f5c518;'>"
-                f"{st.session_state['selected_boletos_qty']}</h2>",
-                unsafe_allow_html=True
+    with c1:
+        if st.button(
+            "➖",
+            key=f"restar_boleto_{rifa_id}",
+            use_container_width=True,
+            disabled=cantidad_actual <= min_boletos
+        ):
+            st.session_state["selected_boletos_qty"] = max(
+                min_boletos, cantidad_actual - 1
             )
+            st.rerun()
 
-        with c3:
-            if st.button("➕", use_container_width=True):
-                if st.session_state["selected_boletos_qty"] < 10000:
-                    st.session_state["selected_boletos_qty"] += 1
-                    st.rerun()
+    with c2:
+        st.markdown(
+            f"<div style='text-align:center;'>"
+            f"<div style='font-size:13px;color:#9ca3af;'>Cantidad de boletos</div>"
+            f"<h2 style='color:#f5c518;margin:2px 0;'>{cantidad_actual}</h2>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
+    with c3:
+        if st.button(
+            "➕",
+            key=f"sumar_boleto_{rifa_id}",
+            use_container_width=True,
+            disabled=cantidad_actual >= 10000
+        ):
+            st.session_state["selected_boletos_qty"] = min(
+                10000, cantidad_actual + 1
+            )
+            st.rerun()
 
     cantidad = st.session_state["selected_boletos_qty"]
     total_pagar = cantidad * precio
@@ -960,48 +992,67 @@ def modal_pago_detalles():
         for idx, m in enumerate(metodos):
             m_id, m_nombre, m_titular, m_tipo, m_cuenta, m_img = m
             es_seleccionado = st.session_state.get("banco_activo_id") == m_id
+
             with cols_bancos[idx % len(cols_bancos)]:
+                # El control para seleccionar el banco queda justo debajo de su logo.
                 if m_img and os.path.exists(m_img):
-                    st.image(m_img, width=90)
+                    st.image(m_img, width=120)
                 else:
-                    st.markdown("### 🏦")
-                st.markdown(f"**{m_nombre}**")
-                st.caption(m_tipo)
+                    st.markdown(f"### 🏦 {m_nombre}")
+
                 if st.button(
-                    "✓ Banco seleccionado" if es_seleccionado else f"Usar {m_nombre}",
+                    f"✓ {m_nombre}" if es_seleccionado else f"Seleccionar {m_nombre}",
                     key=f"btn_card_{m_id}",
-                    use_container_width=True
+                    use_container_width=True,
+                    type="primary" if es_seleccionado else "secondary"
                 ):
                     st.session_state["banco_activo_id"] = m_id
                     st.rerun()
+
     else:
         st.warning("No hay métodos de pago activos en este momento.")
 
     if st.session_state.get("banco_activo_id"):
         banco_sel = next(
-            (
-                m for m in metodos
-                if m[0] == st.session_state["banco_activo_id"]
-            ),
+            (m for m in metodos if m[0] == st.session_state["banco_activo_id"]),
             None
         )
 
         if banco_sel:
             banco_seleccionado = banco_sel[1]
+            st.markdown(f"#### Datos de {banco_sel[1]}")
 
             st.markdown(
-                f"""
-                <div class="bank-card-container">
-                    <h4 style="color:#38bdf8;">🏦 {banco_sel[1]}</h4>
-                    <p><strong>Titular:</strong> {banco_sel[2]}</p>
-                    <p><strong>Tipo de cuenta:</strong> {banco_sel[3]}</p>
-                    <p><strong>Número de cuenta:</strong></p>
-                </div>
-                """,
-                unsafe_allow_html=True
+                f"**Titular:** {banco_sel[2]}  \n"
+                f"**Tipo de cuenta:** {banco_sel[3]}",
             )
 
-            st.code(banco_sel[4])
+            cuenta_col, copiar_col = st.columns([4, 1])
+            with cuenta_col:
+                st.text_input(
+                    "Número de cuenta",
+                    value=str(banco_sel[4]),
+                    disabled=True,
+                    key=f"cuenta_visible_{banco_sel[0]}"
+                )
+            with copiar_col:
+                st.markdown("<div style='height:27px'></div>", unsafe_allow_html=True)
+                # Botón real dentro de un pequeño componente para copiar al portapapeles.
+                cuenta_segura = str(banco_sel[4]).replace("\\", "\\\\").replace("'", "\\'")
+                components.html(
+                    f"""
+                    <button onclick="navigator.clipboard.writeText('{cuenta_segura}').then(() => {{
+                        this.innerText = 'Copiado';
+                    }}).catch(() => {{
+                        this.innerText = 'Selecciona el número';
+                    }});"
+                    style="width:100%;padding:8px 6px;border:1px solid #64748b;
+                    border-radius:8px;background:#172033;color:white;cursor:pointer;">
+                    📋 Copiar
+                    </button>
+                    """,
+                    height=44
+                )
 
     st.divider()
 
