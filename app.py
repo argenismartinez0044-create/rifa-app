@@ -372,7 +372,7 @@ def init_db():
         c.execute("""
             UPDATE rifas SET descripcion=?
             WHERE LOWER(nombre) LIKE '%playstation%'
-        """, ("Compra mínima: 20 boletos. Primer ganador: una PlayStation 5 Pro. Segundo ganador: quince mil pesos (RD$15,000) en efectivo. Tercer ganador: diez mil pesos (RD$10,000) en efectivo.",))
+        """, ("Compra mínima: 20 boletos. Primer ganador: una PlayStation 5 Pro. Segundo ganador: quince mil pesos (RD$15,000). Tercer ganador: diez mil pesos (RD$10,000).",))
         c.execute("""
             UPDATE rifas SET descripcion=?
             WHERE LOWER(nombre) LIKE '%iphone%'
